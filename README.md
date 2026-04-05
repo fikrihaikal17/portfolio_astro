@@ -1,8 +1,4 @@
 # Portfolio Astro
-
-![MuhammadFikriHaikal-portfolio](https://github.com/user-attachments/assets/e284a42b-15c5-495c-99c7-ad5c1eb3bbe7)
-![Deploy Status](https://img.shields.io/badge/Deploy-Vercel-black?style=flat&logo=vercel)
-
 Personal portfolio website built with Astro, React, Tailwind CSS, and TypeScript.
 This project is designed for a modern visual style with smooth motion, responsive layout, reusable section components, and now includes a Superadmin CMS + Monitoring panel backed by MySQL.
 
