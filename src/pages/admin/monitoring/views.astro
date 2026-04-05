@@ -1,0 +1,122 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { getDailyPublicViews } from "@/lib/admin/repository";
+import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { formatDay, formatDayLong } from "@/lib/admin/view-formatters";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+const dailyViewsRaw = await getDailyPublicViews(14);
+const viewsByDate = new Map(dailyViewsRaw.map((item) => [item.view_date, Number(item.total_views) || 0]));
+const dayWindow = 14;
+
+const filledDailyViews = Array.from({ length: dayWindow }, (_, index) => {
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() - (dayWindow - 1 - index));
+  const key = date.toISOString().slice(0, 10);
+
+  return {
+    view_date: key,
+    total_views: viewsByDate.get(key) ?? 0,
+  };
+});
+
+const compactDailyViews = filledDailyViews.slice(-7);
+const maxViews = Math.max(...compactDailyViews.map((item) => item.total_views), 1);
+const totalViews14 = filledDailyViews.reduce((acc, item) => acc + item.total_views, 0);
+const todayViews = filledDailyViews[filledDailyViews.length - 1]?.total_views ?? 0;
+const averageViews = Number((totalViews14 / Math.max(filledDailyViews.length, 1)).toFixed(1));
+const topViewDay = [...filledDailyViews].sort((a, b) => b.total_views - a.total_views)[0] ?? {
+  view_date: "-",
+  total_views: 0,
+};
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Monitoring Views"
+  pageDescription="Halaman khusus analitik views per hari dengan URL terpisah."
+  activePath="/admin/monitoring/views"
+>
+  <section class="section">
+    <h3>Views Per Hari (14 Hari)</h3>
+    <p class="sub">Insight traffic publik berdasarkan event monitoring yang tercatat.</p>
+
+    <div class="metric-grid">
+      <article class="metric-card">
+        <p class="label">Views Hari Ini</p>
+        <p class="value">{todayViews}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Total Views (14 Hari)</p>
+        <p class="value">{totalViews14}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Rata-rata / Hari</p>
+        <p class="value">{averageViews}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Puncak Harian</p>
+        <p class="value">{topViewDay.total_views}</p>
+        <p class="muted" style="margin:4px 0 0;">{formatDayLong(topViewDay.view_date)}</p>
+      </article>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <h4>Trend 7 Hari Terakhir</h4>
+        <p>Grafik ringkas untuk monitoring cepat.</p>
+
+        <div class="compact-views" role="img" aria-label="Grafik views harian 7 hari terakhir">
+          {
+            compactDailyViews.map((item) => {
+              const ratio = Math.max(Math.round((item.total_views / maxViews) * 100), 8);
+              return (
+                <div class="compact-col">
+                  <div class="compact-track">
+                    <div class="compact-fill" style={`height:${ratio}%`} title={`${item.total_views} views`} />
+                  </div>
+                  <span class="bar-value">{item.total_views}</span>
+                  <span class="bar-label">{formatDay(item.view_date)}</span>
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+
+      <div class="panel">
+        <h4>Detail Harian</h4>
+        <p>Data mentah 14 hari untuk audit sederhana.</p>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Total Views</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                filledDailyViews.map((item) => (
+                  <tr>
+                    <td>{formatDayLong(item.view_date)}</td>
+                    <td>{item.total_views}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</AdminShell>

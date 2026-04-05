@@ -1,50 +1,68 @@
-<section id="contact" class="w-full py-12 border-t border-[#ffffff10]">
+<section
+  id="contact"
+  class="w-full py-12 border-t border-[var(--border-subtle)]"
+  data-scroll-reveal
+  data-aos="fade-up"
+  data-theme-animate
+>
   <div class="max-w-5xl mx-auto">
-    <h2 class="text-lg text-[var(--sec)] mb-2 shiny-sec">Let's talk</h2>
-    <h3 class="text-4xl md:text-5xl font-medium text-[var(--white)] mb-6">
+    <h2 class="text-lg text-[var(--sec)] mb-2 shiny-sec" data-i18n="contact.kicker"
+      >Let's talk</h2
+    >
+    <h3
+      class="text-4xl md:text-5xl font-medium text-[var(--white)] mb-6"
+      data-i18n="contact.title"
+    >
       Contact
     </h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div class="text-[var(--white-icon)]">
-        <p class="mb-4">
+        <p class="mb-4" data-i18n="contact.description">
           Have a question or a project in mind? Feel free to reach out.
         </p>
         <div class="flex items-center gap-2">
-          <span>Location:</span>
-          <span class="text-[var(--white)]">Colombia, Valle del cauca</span>
+          <span data-i18n="contact.locationLabel">Location:</span>
+          <span class="text-[var(--white)]">Ciamis, Jawa Barat, Indonesia</span>
         </div>
       </div>
 
       <div>
         <form
           id="contact-form"
-          action="https://formspree.io/f/mnnjznkj"
+          action="https://formsubmit.co/ajax/fikrihaikal170308@gmail.com"
           method="POST"
           class="flex flex-col gap-4"
         >
+          <input type="hidden" name="_subject" value="New message from portfolio contact form" />
+          <input type="hidden" name="_captcha" value="false" />
+          <input type="hidden" name="_template" value="table" />
           <input
             type="text"
-            name="from_name"
+            name="name"
             placeholder="Name"
+            data-i18n-placeholder="contact.placeholder.name"
             required
-            class="px-4 py-2 bg-[#1414149c] text-[var(--white)] border border-[var(--white-icon-tr)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--sec)]"
+            class="px-4 py-2 bg-[var(--component-bg)] text-[var(--white)] border border-[var(--white-icon-tr)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--sec)]"
           />
           <input
             type="email"
-            name="reply_to"
+            name="email"
             placeholder="Email"
+            data-i18n-placeholder="contact.placeholder.email"
             required
-            class="px-4 py-2 bg-[#1414149c] text-[var(--white)] border border-[var(--white-icon-tr)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--sec)]"
+            class="px-4 py-2 bg-[var(--component-bg)] text-[var(--white)] border border-[var(--white-icon-tr)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--sec)]"
           />
           <textarea
             name="message"
             placeholder="Message"
+            data-i18n-placeholder="contact.placeholder.message"
             rows="6"
             required
-            class="px-4 py-2 bg-[#1414149c] text-[var(--white)] border border-[var(--white-icon-tr)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--sec)] resize-none"
+            class="px-4 py-2 bg-[var(--component-bg)] text-[var(--white)] border border-[var(--white-icon-tr)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--sec)] resize-none"
           ></textarea>
           <button
             type="submit"
+            data-i18n="contact.submit"
             class="px-4 py-2 bg-[var(--white-icon-tr)] text-[var(--white)] rounded-lg opacity-60 transition-opacity border border-[var(--white-icon-tr)] hover:opacity-100 hover:bg-[var(--white-icon-tr)]"
           >
             Submit
@@ -52,6 +70,7 @@
         </form>
         <div
           id="form-message"
+          data-i18n="contact.success"
           class="hidden justify-center items-center mt-4 text-[var(--white)] text-lg"
         >
           ✅ Thank you for your message!
@@ -82,11 +101,11 @@
       } else {
         const data = await response.json();
         console.error("Error response:", data);
-        alert("There was a problem sending your message.");
+        alert(window.__portfolioTranslate?.("contact.error") || "There was a problem sending your message.");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("There was a problem sending your message.");
+      alert(window.__portfolioTranslate?.("contact.error") || "There was a problem sending your message.");
     }
   });
 </script>

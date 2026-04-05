@@ -1,0 +1,199 @@
+---
+const certificates = [
+  {
+    provider: "Dicoding",
+    year: "2026",
+    title: "Back-End with JavaScript",
+    issuer: "Dicoding Indonesia",
+    credentialId: "2VX35DR3JPYQ",
+    verificationUrl: "https://www.dicoding.com/certificates/2VX35DR3JPYQ",
+    previewPdf: "/certificates/dicoding-back-end-javascript-2026.pdf",
+    tags: ["JavaScript", "Back-End", "API"],
+  },
+  {
+    provider: "Dicoding",
+    year: "2026",
+    title: "Web App with React",
+    issuer: "Dicoding Indonesia",
+    credentialId: "72ZDK42JVPYW",
+    verificationUrl: "https://www.dicoding.com/certificates/72ZDK42JVPYW",
+    previewPdf: "/certificates/dicoding-react-web-app-2026.pdf",
+    tags: ["React", "Web App", "Front-End"],
+  },
+  {
+    provider: "Dicoding",
+    year: "2024",
+    title: "AWS Cloud Practitioner",
+    issuer: "Dicoding Indonesia",
+    credentialId: "2VX3RJY03ZYQ",
+    verificationUrl: "https://www.dicoding.com/certificates/2VX3RJY03ZYQ",
+    previewPdf: "/certificates/dicoding-aws-cloud-practitioner-2024.pdf",
+    tags: ["AWS", "Cloud", "Fundamentals"],
+  },
+  {
+    provider: "Programmer Zaman Now",
+    year: "2024",
+    title: "HTML, CSS & JavaScript",
+    issuer: "Programmer Zaman Now (Udemy)",
+    credentialId: "UC-bd879002-97bc-45eb-b0b4-b78e6b64c3fd",
+    verificationUrl:
+      "https://udemy-certificate.s3.amazonaws.com/pdf/UC-bd879002-97bc-45eb-b0b4-b78e6b64c3fd.pdf",
+    previewPdf: "/certificates/udemy-html-css-js-pzn-2024.pdf",
+    tags: ["HTML", "CSS", "JavaScript"],
+  },
+  {
+    provider: "Dicoding",
+    year: "2024",
+    title: "Data Visualization Fundamentals",
+    issuer: "Dicoding Indonesia",
+    credentialId: "QLZ97QR37P5D",
+    verificationUrl: "https://www.dicoding.com/certificates/QLZ97QR37P5D",
+    previewPdf: "/certificates/dicoding-data-visualization-fundamentals-2024.pdf",
+    tags: ["Data", "Visualization", "Fundamentals"],
+  },
+  {
+    provider: "ETS / Direktorat SMK",
+    year: "2025",
+    title: "TOEIC Official Score",
+    issuer: "ETS / Direktorat SMK",
+    credentialId: "DRIVE-1haIQfn4z4SQKYRsiNWbEKjDc1zmMJCjs",
+    score: "565",
+    verificationUrl: "https://drive.google.com/file/d/1haIQfn4z4SQKYRsiNWbEKjDc1zmMJCjs/view",
+    previewPdf: "/certificates/toeic-ets-565-2025.pdf",
+    tags: ["TOEIC", "English", "Official Score"],
+  },
+  {
+    provider: "BLTI",
+    year: "2025",
+    title: "TOEIC Score",
+    issuer: "BLTI",
+    credentialId: "DRIVE-1wee1DVHx1pgRT6ElqZLOMIeBTdO0UIpe",
+    score: "835",
+    verificationUrl: "https://drive.google.com/file/d/1wee1DVHx1pgRT6ElqZLOMIeBTdO0UIpe/view",
+    previewPdf: "/certificates/toeic-blti-835-2025.pdf",
+    tags: ["TOEIC", "English", "High Score"],
+  },
+];
+---
+
+<section
+  id="certification"
+  class="py-12 border-t border-[var(--border-subtle)] text-[var(--white)] scroll-mt-36"
+  data-scroll-reveal
+  data-aos="fade-up"
+  data-theme-animate
+>
+  <div class="max-w-6xl mx-auto">
+    <h2 class="text-lg text-[var(--sec)] mb-2 shiny-sec" data-i18n="certification.kicker"
+      >Credentials</h2
+    >
+    <h3 class="text-4xl md:text-5xl font-medium mb-4" data-i18n="certification.title"
+      >Certification</h3
+    >
+    <p class="text-[var(--white-icon)] mb-6" data-i18n="certification.description">
+      Complete record of certifications and official scores.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 items-stretch">
+      {
+        certificates.map((cert) => (
+          <article class="h-full flex flex-col rounded-2xl border border-[var(--white-icon-tr)] bg-[var(--component-bg)] p-5 md:p-6">
+            <p class="text-xs tracking-[0.1em] uppercase text-[var(--sec)] mb-2">{cert.provider} • {cert.year}</p>
+            <h4 class="text-xl md:text-2xl font-semibold mb-3 min-h-[3.75rem]">{cert.title}</h4>
+
+            <div class="mt-2 flex flex-wrap content-start gap-2 min-h-[2.75rem]">
+              {cert.tags.map((tag) => (
+                <span class="px-3 py-1 rounded-full text-xs border border-[var(--white-icon-tr)] text-[var(--white-icon)]">{tag}</span>
+              ))}
+            </div>
+
+            <a
+              href={cert.verificationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-5 mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--white-icon-tr)] text-[var(--white-icon)] hover:text-[var(--white)] hover:border-[var(--sec)] transition-colors"
+            >
+              Open Verification Page
+              <span aria-hidden="true">↗</span>
+            </a>
+
+            <div class="mt-5 rounded-xl overflow-hidden border border-[var(--white-icon-tr)] bg-[var(--background)]">
+              <div class="px-4 py-2 text-xs tracking-[0.08em] uppercase border-b border-[var(--white-icon-tr)] text-[var(--white-icon)]">
+                Certificate Preview (Auto)
+              </div>
+              <div class="relative h-[19rem] bg-[#f4f5f8] flex items-center justify-center overflow-hidden" data-cert-preview-frame>
+                <canvas
+                  class="block max-w-full h-auto"
+                  data-cert-preview-canvas
+                  data-cert-pdf={cert.previewPdf}
+                  aria-label={`Preview of ${cert.title}`}
+                ></canvas>
+                <p
+                  class="absolute inset-0 flex items-center justify-center text-sm text-[#4a5568]"
+                  data-cert-preview-status
+                >
+                  Loading certificate preview...
+                </p>
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script type="module" is:inline>
+  import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs";
+
+  const canvases = document.querySelectorAll("[data-cert-preview-canvas]");
+  const statuses = document.querySelectorAll("[data-cert-preview-status]");
+
+  if (canvases.length > 0) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.min.mjs";
+
+    const renderPreview = async (canvas, status, certificatePdfUrl) => {
+      try {
+        const loadingTask = pdfjsLib.getDocument(certificatePdfUrl);
+        const pdfDocument = await loadingTask.promise;
+        const firstPage = await pdfDocument.getPage(1);
+        const initialViewport = firstPage.getViewport({ scale: 1 });
+        const frame = canvas.closest("[data-cert-preview-frame]");
+        const frameWidth =
+          frame instanceof HTMLElement
+            ? frame.clientWidth - 16
+            : canvas.parentElement?.clientWidth ?? initialViewport.width;
+        const frameHeight = frame instanceof HTMLElement ? frame.clientHeight - 16 : initialViewport.height;
+
+        const scale = Math.min(
+          frameWidth / initialViewport.width,
+          frameHeight / initialViewport.height
+        );
+        const viewport = firstPage.getViewport({ scale });
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          throw new Error("Cannot get 2D context for certificate canvas.");
+        }
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await firstPage.render({ canvasContext: ctx, viewport }).promise;
+        status.classList.add("hidden");
+      } catch {
+        status.textContent = "Preview unavailable. Open verification page to view full certificate.";
+      }
+    };
+
+    canvases.forEach((canvas, index) => {
+      const status = statuses[index];
+      const pdfUrl = canvas.dataset.certPdf;
+
+      if (!status || !pdfUrl) {
+        return;
+      }
+
+      renderPreview(canvas, status, pdfUrl);
+    });
+  }
+</script>

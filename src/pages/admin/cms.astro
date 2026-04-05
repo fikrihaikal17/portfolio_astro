@@ -1,0 +1,159 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { formatDateTime } from "@/lib/admin/view-formatters";
+import {
+  deleteCmsEntry,
+  getAllCmsEntries,
+  logAdminEvent,
+  upsertCmsEntry,
+} from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    if (action === "save-cms") {
+      const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
+      const title = String(formData.get("title") ?? "").trim();
+      const contentJson = String(formData.get("content_json") ?? "").trim();
+      const isPublished = formData.get("is_published") === "on";
+
+      if (!slug || !title) {
+        throw new Error("Slug dan title CMS wajib diisi.");
+      }
+
+      JSON.parse(contentJson || "{}");
+
+      await upsertCmsEntry(slug, title, contentJson, isPublished, admin.id);
+      await logAdminEvent(
+        "cms_saved",
+        "admin-cms",
+        `CMS ${slug} disimpan oleh ${admin.username}`,
+        "info",
+        { slug, isPublished },
+        admin.id
+      );
+      noticeMessage = "CMS entry berhasil disimpan.";
+    } else if (action === "delete-cms") {
+      const cmsId = Number(formData.get("cms_id") ?? "0");
+      if (!Number.isFinite(cmsId) || cmsId <= 0) {
+        throw new Error("ID CMS tidak valid.");
+      }
+
+      await deleteCmsEntry(cmsId);
+      await logAdminEvent(
+        "cms_deleted",
+        "admin-cms",
+        `CMS ID ${cmsId} dihapus oleh ${admin.username}`,
+        "warning",
+        { cmsId },
+        admin.id
+      );
+      noticeMessage = "CMS entry berhasil dihapus.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-cms",
+      `Aksi CMS gagal: ${errorMessage}`,
+      "error",
+      { action },
+      admin.id
+    );
+  }
+}
+
+const cmsEntries = await getAllCmsEntries();
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="CMS Pages"
+  pageDescription="Kelola konten CMS di halaman URL terpisah untuk workflow yang lebih jelas."
+  activePath="/admin/cms"
+  noticeMessage={noticeMessage}
+  errorMessage={errorMessage}
+>
+  <section class="section">
+    <h3>CMS Pages (MySQL)</h3>
+    <p class="sub">Kelola konten CMS section website lewat payload JSON.</p>
+
+    <form method="post">
+      <input type="hidden" name="action" value="save-cms" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="slug">Slug</label>
+          <input id="slug" name="slug" placeholder="home-hero" required />
+        </div>
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input id="title" name="title" placeholder="Homepage Hero Content" required />
+        </div>
+        <div class="form-group full">
+          <label for="content_json">Content JSON</label>
+          <textarea id="content_json" name="content_json" placeholder='{"headline":"Software Engineer","subtitle":"Backend & IoT"}' required></textarea>
+        </div>
+        <div class="form-group full" style="flex-direction: row; align-items: center;">
+          <input id="is_published" name="is_published" type="checkbox" checked style="width:auto; margin:0;" />
+          <label for="is_published" style="margin:0;">Published</label>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit">Simpan CMS Entry</button>
+      </div>
+    </form>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Slug</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cmsEntries.length === 0 ? (
+            <tr>
+              <td colspan="5" class="muted">Belum ada CMS page tersimpan.</td>
+            </tr>
+          ) : (
+            cmsEntries.map((entry) => (
+              <tr>
+                <td><code>{entry.slug}</code></td>
+                <td>{entry.title}</td>
+                <td>
+                  <span class="badge">{entry.is_published === 1 ? "Published" : "Draft"}</span>
+                </td>
+                <td>{formatDateTime(entry.updated_at)}</td>
+                <td>
+                  <form method="post" onsubmit="return confirm('Hapus CMS entry ini?');">
+                    <input type="hidden" name="action" value="delete-cms" />
+                    <input type="hidden" name="cms_id" value={entry.id} />
+                    <button class="danger" type="submit">Hapus</button>
+                  </form>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>

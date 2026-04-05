@@ -1,23 +1,89 @@
 ---
+import "aos/dist/aos.css";
+import PublicChatbot from "@/components/PublicChatbot.astro";
+
 interface Props {
   title: string;
 }
 
 const { title } = Astro.props;
+const siteUrl = "https://portfolio.kall.my.id";
+const pageTitle = `${title} | Software Engineer`;
+const pageDescription =
+  "Muhammad Fikri Haikal - Software Engineer building practical digital solutions across backend engineering, IoT prototyping, and cloud exploration.";
+const ogImage = `${siteUrl}/og.image.v2.png`;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>{title} | Software Developer</title>
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <meta name="author" content="Muhammad Fikri Haikal" />
     <meta
-      name="description"
-      content="Oscar Andres Hernandez Pineda - Software Developer building interactive and seamless digital experiences with cutting-edge frontend development."
+      name="keywords"
+      content="Muhammad Fikri Haikal, Software Engineer, Backend Developer, IoT Developer, Cloud Engineer, Portfolio Indonesia"
     />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <meta
+      name="googlebot"
+      content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="format-detection" content="telephone=no,address=no,email=no" />
+    <meta name="theme-color" content="#070b1e" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="canonical" href="https://oscarhernandez.vercel.app/" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/favicon.png" />
+    <link rel="canonical" href={`${siteUrl}/`} />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href={`${siteUrl}/sitemap.xml`} />
+    <link rel="alternate" hreflang="en" href={`${siteUrl}/`} />
+    <link rel="alternate" hreflang="id" href={`${siteUrl}/`} />
+    <link rel="alternate" hreflang="x-default" href={`${siteUrl}/`} />
+
+    <script is:inline>
+      (() => {
+        try {
+          const themeKey = "theme-preference";
+          const languageKey = "language-preference";
+          const storedTheme = localStorage.getItem(themeKey);
+          const storedLanguageMode = localStorage.getItem(languageKey);
+          const prefersLight = window.matchMedia(
+            "(prefers-color-scheme: light)"
+          ).matches;
+          const browserLanguage = navigator.language.toLowerCase();
+          const theme =
+            storedTheme === "light" || storedTheme === "dark"
+              ? storedTheme
+              : prefersLight
+                ? "light"
+                : "dark";
+          const languageMode =
+            storedLanguageMode === "auto" ||
+            storedLanguageMode === "id" ||
+            storedLanguageMode === "en"
+              ? storedLanguageMode
+              : "auto";
+          const language =
+            languageMode === "auto"
+              ? browserLanguage.startsWith("id")
+                ? "id"
+                : "en"
+              : languageMode;
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.setAttribute("lang", language);
+          document.documentElement.setAttribute("data-language", language);
+          document.documentElement.setAttribute("data-language-mode", languageMode);
+        } catch {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.setAttribute("lang", "en");
+          document.documentElement.setAttribute("data-language", "en");
+          document.documentElement.setAttribute("data-language-mode", "auto");
+        }
+      })();
+    </script>
 
     <link
       rel="preload"
@@ -27,45 +93,948 @@ const { title } = Astro.props;
       crossorigin="anonymous"
     />
 
-    <meta
-      property="og:title"
-      content="Oscar Andres Hernandez Pineda | Software Developer"
-    />
-    <meta
-      property="og:description"
-      content="Portfolio of Oscar Andres Hernandez Pineda, Software Developer specializing in frontend and interactive experiences."
-    />
-    <meta
-      property="og:image"
-      content="https://oscarhernandez.vercel.app/og.image.png"
-    />
-    <meta property="og:url" content="https://oscarhernandez.vercel.app" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:url" content={siteUrl} />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:locale:alternate" content="en_US" />
     <meta
       property="og:site_name"
-      content="Oscar Andres Hernandez Pineda Portfolio"
+      content="Muhammad Fikri Haikal Portfolio"
     />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={ogImage} />
 
     <!-- Structured Data (JSON-LD) -->
-    <script type="application/ld+json">
+    <script type="application/ld+json" is:inline>
       {
         "@context": "https://schema.org",
-        "@type": "Person",
-        "name": "Oscar Andres Hernandez Pineda",
-        "alternateName": "Oscar Hernandez",
-        "url": "https://oscarhernandez.vercel.app",
-        "image": "https://oscarhernandez.vercel.app/og.image.png",
-        "sameAs": [
-          "https://github.com/gothsec",
-          "https://linkedin.com/in/andresshernandez-eng"
-        ],
-        "jobTitle": "Software Developer",
-        "description": "Software Developer building interactive and seamless digital experiences."
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://portfolio.kall.my.id/#website",
+            "url": "https://portfolio.kall.my.id/",
+            "name": "Muhammad Fikri Haikal Portfolio",
+            "description": "Portfolio website of Muhammad Fikri Haikal, Software Engineer specializing in backend engineering, IoT, and cloud.",
+            "inLanguage": ["id", "en"]
+          },
+          {
+            "@type": "Person",
+            "@id": "https://portfolio.kall.my.id/#person",
+            "name": "Muhammad Fikri Haikal",
+            "alternateName": "Muhammad Fikri",
+            "url": "https://portfolio.kall.my.id/",
+            "image": "https://portfolio.kall.my.id/og.image.v2.png",
+            "sameAs": [
+              "https://github.com/fikrihaikal17",
+              "https://www.linkedin.com/in/fikriihaikal"
+            ],
+            "jobTitle": "Software Engineer",
+            "description": "Software Engineer building interactive and seamless digital experiences.",
+            "worksFor": {
+              "@type": "Organization",
+              "name": "Freelance"
+            }
+          }
+        ]
       }
     </script>
   </head>
-  <body class="bg-[--background] sm:px-28 lg:px-20 px-9">
-    <slot />
+  <body class="bg-[--background] sm:px-28 lg:px-20 px-9 transition-colors duration-500">
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-label="Loading page">
+      <div id="page-loader-popup" class="page-loader-popup">
+        <div id="page-loader-emblem" class="page-loader-emblem" aria-hidden="true">
+          <span id="page-loader-emblem-core" class="page-loader-emblem-core"></span>
+          <span id="page-loader-emblem-ring" class="page-loader-emblem-ring"></span>
+        </div>
+        <p id="page-loader-title" class="page-loader-title">Muhammad Fikri Haikal</p>
+        <p id="page-loader-label" class="page-loader-label">Loading experience...</p>
+        <p id="page-loader-subline" class="page-loader-subline">Preparing a seamless interface...</p>
+        <div class="page-loader-track" aria-hidden="true">
+          <span id="page-loader-bar" class="page-loader-bar"></span>
+        </div>
+      </div>
+    </div>
+    <div
+      class="ambient-orb ambient-orb-one"
+      aria-hidden="true"
+      data-parallax="18"
+      data-theme-animate
+    ></div>
+    <div
+      class="ambient-orb ambient-orb-two"
+      aria-hidden="true"
+      data-parallax="12"
+      data-theme-animate
+    ></div>
+    <div class="content-shell">
+      <slot />
+    </div>
+    <PublicChatbot />
+    <div id="custom-cursor-ring" class="custom-cursor-layer custom-cursor-ring" aria-hidden="true"></div>
+    <div id="custom-cursor-core" class="custom-cursor-layer custom-cursor-core" aria-hidden="true"></div>
+    <script>
+      import AOS from "aos";
+      import { gsap } from "gsap";
+
+      const themeKey = "theme-preference";
+      const languageKey = "language-preference";
+      const motionKey = "motion-level";
+      const root = document.documentElement;
+      const themeToggle = document.getElementById("theme-toggle");
+      const languageToggle = document.getElementById("language-toggle");
+      const languageToggleLabel = document.getElementById("language-toggle-label");
+      const pageLoader = document.getElementById("page-loader");
+      const pageLoaderPopup = document.getElementById("page-loader-popup");
+      const pageLoaderBar = document.getElementById("page-loader-bar");
+      const pageLoaderEmblem = document.getElementById("page-loader-emblem");
+      const pageLoaderEmblemCore = document.getElementById("page-loader-emblem-core");
+      const pageLoaderEmblemRing = document.getElementById("page-loader-emblem-ring");
+      const pageLoaderTitle = document.getElementById("page-loader-title");
+      const pageLoaderLabel = document.getElementById("page-loader-label");
+      const pageLoaderSubline = document.getElementById("page-loader-subline");
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
+      const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+      const reducedMotionQuery = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      );
+      const cursorRing = document.getElementById("custom-cursor-ring");
+      const cursorCore = document.getElementById("custom-cursor-core");
+      const staggerNodes = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-theme-animate]")
+      );
+      const revealNodes = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-scroll-reveal]")
+      );
+      const parallaxNodes = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-parallax]")
+      );
+      const introNodes = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-intro]")
+      );
+      let themeSwitchTimeout: number | null = null;
+      let parallaxRaf: number | null = null;
+      let revealRaf: number | null = null;
+      let pointerX = 0;
+      let pointerY = 0;
+      let motionLevel: "subtle" | "intense" = "subtle";
+      let language: "id" | "en" = "en";
+      let languageMode: "auto" | "id" | "en" = "auto";
+      let disposeAnimatedCursor: (() => void) | null = null;
+
+      const prefersReducedMotion = () => reducedMotionQuery.matches;
+
+      staggerNodes.forEach((node, index) => {
+        node.style.setProperty("--theme-stagger-index", String(index));
+      });
+
+      revealNodes.forEach((node, index) => {
+        node.style.setProperty("--reveal-order", String(index));
+      });
+
+      const getStoredTheme = () => {
+        try {
+          return localStorage.getItem(themeKey);
+        } catch {
+          return null;
+        }
+      };
+
+      const getStoredMotion = () => {
+        try {
+          return localStorage.getItem(motionKey);
+        } catch {
+          return null;
+        }
+      };
+
+      const getStoredLanguage = () => {
+        try {
+          return localStorage.getItem(languageKey);
+        } catch {
+          return null;
+        }
+      };
+
+      const translations: Record<string, { en: string; id: string }> = {
+        "nav.home": { en: "Home", id: "Beranda" },
+        "nav.work": { en: "Work", id: "Karya" },
+        "nav.certification": { en: "Certification", id: "Sertifikasi" },
+        "nav.expertise": { en: "Expertise", id: "Keahlian" },
+        "nav.experience": { en: "Experience", id: "Pengalaman" },
+        "nav.contact": { en: "Contact", id: "Kontak" },
+        "home.greeting": { en: "Hi, I'm Muhammad Fikri Haikal", id: "Halo, saya Muhammad Fikri Haikal" },
+        "home.roleLine1": { en: "Software", id: "Insinyur" },
+        "home.roleLine2": { en: "Engineer", id: "Perangkat Lunak" },
+        "home.taglinePrefix": {
+          en: "Transforming ideas into practical digital solutions powered by",
+          id: "Membangun solusi digital dengan fokus",
+        },
+        "home.taglineHighlight": { en: "backend, IoT, and cloud", id: "backend, IoT, dan cloud" },
+        "home.taglineSuffix": { en: "expertise.", id: "." },
+        "home.hero.techLabel": { en: "Core stack", id: "Stack utama" },
+        "home.hero.connectLabel": { en: "Connect", id: "Terhubung" },
+        "home.hero.signalTitle": { en: "Internship Snapshot", id: "Ringkasan Magang" },
+        "home.hero.signalText": {
+          en: "Software Engineer Intern at Sakata Innovation Center, developing Niskala and KWS web applications while building IoT prototypes.",
+          id: "Software Engineer Intern di Sakata Innovation Center, mengembangkan aplikasi web Niskala dan KWS sambil membangun prototipe IoT.",
+        },
+        "home.hero.statusTitle": { en: "Current Focus", id: "Fokus Saat Ini" },
+        "home.hero.statusItem1": {
+          en: "Building backend and frontend solutions with real-world use cases in web and IoT.",
+          id: "Membangun solusi backend dan frontend dengan use case nyata pada web dan IoT.",
+        },
+        "home.hero.statusItem2": {
+          en: "Open to internship and collaborative opportunities in software development.",
+          id: "Terbuka untuk peluang magang dan kolaborasi dalam pengembangan perangkat lunak.",
+        },
+        "home.hero.pill1": { en: "Backend Specialist", id: "Spesialis Backend" },
+        "home.hero.pill2": { en: "IoT & Cloud", id: "IoT & Cloud" },
+        "home.hero.pill3": { en: "AI/ML Explorer", id: "Eksplorator AI/ML" },
+        "home.hero.ctaProjects": { en: "View Projects", id: "Lihat Proyek" },
+        "home.hero.ctaDownloadCv": { en: "Download CV", id: "Unduh CV" },
+        "home.focus.kicker": { en: "Experience Highlights", id: "Sorotan Pengalaman" },
+        "home.focus.title": {
+          en: "Software Engineer Intern at Sakata Innovation Center (Oct 2025 - Jan 2026).",
+          id: "Software Engineer Intern di Sakata Innovation Center (Okt 2025 - Jan 2026).",
+        },
+        "home.focus.description": {
+          en: "Developed Niskala and KWS web applications, built IoT prototypes, supported robotics training, and explored AI/ML using Python with Jupyter Notebook.",
+          id: "Mengembangkan aplikasi web Niskala dan KWS, membuat prototipe IoT, mendukung pelatihan robotik, serta mengeksplorasi AI/ML menggunakan Python dan Jupyter Notebook.",
+        },
+        "home.focus.tag.1": { en: "Web Development", id: "Pengembangan Web" },
+        "home.focus.tag.2": { en: "IoT Prototyping", id: "Prototyping IoT" },
+        "home.focus.tag.3": { en: "AI/ML Exploration", id: "Eksplorasi AI/ML" },
+        "home.focus.flow.title": { en: "Key Activities", id: "Aktivitas Utama" },
+        "home.focus.flow.step.1": { en: "Build Apps", id: "Bangun Aplikasi" },
+        "home.focus.flow.step.2": { en: "Mentor & Train", id: "Mentor & Pelatihan" },
+        "home.focus.flow.step.3": { en: "Prototype IoT", id: "Prototipe IoT" },
+        "home.focus.metric.1.label": { en: "Internship duration", id: "Durasi magang" },
+        "home.focus.metric.1.value": { en: "3 Months", id: "3 Bulan" },
+        "home.focus.metric.2.label": { en: "Primary role", id: "Peran utama" },
+        "home.focus.metric.2.value": { en: "Software Engineer Intern", id: "Software Engineer Intern" },
+        "projects.kicker": { en: "Selected Work", id: "Karya Pilihan" },
+        "projects.title": { en: "Work", id: "Karya" },
+        "projects.moreOn": { en: "More work on", id: "Karya lainnya di" },
+        "projects.status.deployed": { en: "Deployed", id: "Sudah Deploy" },
+        "projects.status.onDevelopment": { en: "On Development", id: "Dalam Pengembangan" },
+        "projects.status.contributor": { en: "Contributor", id: "Kontributor" },
+        "projects.status.internship": { en: "Internship Project", id: "Proyek Magang" },
+        "projects.status.prototype": { en: "Prototype", id: "Prototipe" },
+        "certification.kicker": { en: "Credentials", id: "Kredensial" },
+        "certification.title": { en: "Certification", id: "Sertifikasi" },
+        "certification.description": {
+          en: "Complete record of certifications and official scores.",
+          id: "Rekaman lengkap sertifikasi dan skor resmi.",
+        },
+        "certification.empty.title": {
+          en: "No certifications added yet",
+          id: "Belum ada sertifikasi ditambahkan",
+        },
+        "certification.empty.subtitle": {
+          en: "Add your certificate list here to showcase your validated skills.",
+          id: "Tambahkan daftar sertifikat kamu di sini untuk menampilkan skill yang tervalidasi.",
+        },
+        "contact.kicker": { en: "Let's talk", id: "Mari ngobrol" },
+        "contact.title": { en: "Contact", id: "Kontak" },
+        "contact.description": {
+          en: "Have a question or a project in mind? Feel free to reach out.",
+          id: "Punya pertanyaan atau ide proyek? Jangan ragu untuk menghubungi saya.",
+        },
+        "contact.locationLabel": { en: "Location:", id: "Lokasi:" },
+        "contact.placeholder.name": { en: "Name", id: "Nama" },
+        "contact.placeholder.email": { en: "Email", id: "Email" },
+        "contact.placeholder.message": { en: "Message", id: "Pesan" },
+        "contact.submit": { en: "Submit", id: "Kirim" },
+        "contact.success": { en: "✅ Thank you for your message!", id: "✅ Terima kasih, pesan kamu sudah terkirim!" },
+        "contact.error": {
+          en: "There was a problem sending your message.",
+          id: "Terjadi masalah saat mengirim pesan kamu.",
+        },
+        "footer.tech.builtWith": { en: "Built with", id: "Dibangun dengan" },
+        "footer.tech.styledWith": { en: "Styled with", id: "Ditata dengan" },
+        "footer.tech.deployedOn": { en: "Deployed on", id: "Di-deploy di" },
+        "footer.rights": { en: "All rights reserved.", id: "Hak cipta dilindungi." },
+      };
+
+      const translate = (key: string, currentLanguage = language) => {
+        const entry = translations[key];
+        if (!entry) {
+          return key;
+        }
+        return entry[currentLanguage] || entry.en;
+      };
+
+      const resolveTheme = (): "dark" | "light" => {
+        const storedTheme = getStoredTheme();
+        if (storedTheme === "dark" || storedTheme === "light") {
+          return storedTheme;
+        }
+        return mediaQuery.matches ? "light" : "dark";
+      };
+
+      const resolveMotion = (): "subtle" | "intense" => {
+        const storedMotion = getStoredMotion();
+        if (storedMotion === "subtle" || storedMotion === "intense") {
+          return storedMotion;
+        }
+        return "subtle";
+      };
+
+      const resolveLanguageMode = (): "auto" | "id" | "en" => {
+        const storedLanguage = getStoredLanguage();
+        if (
+          storedLanguage === "auto" ||
+          storedLanguage === "id" ||
+          storedLanguage === "en"
+        ) {
+          return storedLanguage;
+        }
+
+        return "auto";
+      };
+
+      const resolveLanguageFromMode = (mode: "auto" | "id" | "en") => {
+        if (mode === "auto") {
+          const browserLanguage = navigator.language.toLowerCase();
+          return browserLanguage.startsWith("id") ? "id" : "en";
+        }
+        return mode;
+      };
+
+      const applyTheme = (theme: "dark" | "light") => {
+        root.setAttribute("data-theme", theme);
+        if (themeToggle) {
+          const nextTheme = theme === "dark" ? "light" : "dark";
+          themeToggle.setAttribute("aria-label", `Switch to ${nextTheme} mode`);
+          themeToggle.setAttribute("title", `Switch to ${nextTheme} mode`);
+        }
+      };
+
+      const updateTranslatedDom = () => {
+        document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((node) => {
+          const key = node.dataset.i18n;
+          if (!key) {
+            return;
+          }
+          node.textContent = translate(key);
+        });
+
+        document
+          .querySelectorAll<HTMLElement>("[data-i18n-placeholder]")
+          .forEach((node) => {
+            const key = node.dataset.i18nPlaceholder;
+            if (!key) {
+              return;
+            }
+            const translatedText = translate(key);
+            node.setAttribute("placeholder", translatedText);
+          });
+
+        document
+          .querySelectorAll<HTMLElement>("[data-i18n-aria-label]")
+          .forEach((node) => {
+            const key = node.dataset.i18nAriaLabel;
+            if (!key) {
+              return;
+            }
+            node.setAttribute("aria-label", translate(key));
+          });
+      };
+
+      const applyLanguageMode = (nextMode: "auto" | "id" | "en") => {
+        languageMode = nextMode;
+        language = resolveLanguageFromMode(nextMode);
+
+        root.setAttribute("lang", language);
+        root.setAttribute("data-language", language);
+        root.setAttribute("data-language-mode", nextMode);
+
+        if (languageToggle) {
+          const cycleOrder: Array<"auto" | "id" | "en"> = [
+            "auto",
+            "id",
+            "en",
+          ];
+          const nextIndex =
+            (cycleOrder.indexOf(nextMode) + 1) % cycleOrder.length;
+          const upcomingMode = cycleOrder[nextIndex];
+
+          languageToggle.setAttribute(
+            "aria-label",
+            `Switch language mode to ${upcomingMode.toUpperCase()}`
+          );
+          languageToggle.setAttribute(
+            "title",
+            `Language mode: ${nextMode.toUpperCase()}`
+          );
+          languageToggle.setAttribute("data-next-language-mode", upcomingMode);
+        }
+
+        if (languageToggleLabel) {
+          languageToggleLabel.textContent = nextMode.toUpperCase();
+        }
+
+        if (pageLoaderLabel) {
+          pageLoaderLabel.textContent =
+            language === "id" ? "Memuat pengalaman..." : "Loading experience...";
+        }
+
+        if (pageLoaderSubline) {
+          pageLoaderSubline.textContent =
+            language === "id"
+              ? "Menyiapkan antarmuka yang mulus..."
+              : "Preparing a seamless interface...";
+        }
+
+        updateTranslatedDom();
+        window.dispatchEvent(
+          new CustomEvent("portfolio:language-change", {
+            detail: { language, mode: nextMode },
+          })
+        );
+      };
+
+      (window as Window & {
+        __portfolioTranslate?: (key: string) => string;
+      }).__portfolioTranslate = (key: string) => translate(key);
+
+      const initAos = (level: "subtle" | "intense") => {
+        AOS.init({
+          duration: level === "intense" ? 980 : 700,
+          easing: "ease-out-cubic",
+          offset: level === "intense" ? 108 : 72,
+          once: false,
+          mirror: true,
+          disable: prefersReducedMotion(),
+        });
+      };
+
+      const playThemeTransition = () => {
+        if (prefersReducedMotion()) {
+          return;
+        }
+
+        const switchDuration = motionLevel === "intense" ? 960 : 700;
+
+        document.body.classList.remove("theme-switching");
+        void document.body.offsetWidth;
+        document.body.classList.add("theme-switching");
+
+        if (themeSwitchTimeout) {
+          window.clearTimeout(themeSwitchTimeout);
+        }
+
+        themeSwitchTimeout = window.setTimeout(() => {
+          document.body.classList.remove("theme-switching");
+          themeSwitchTimeout = null;
+        }, switchDuration);
+      };
+
+      const renderParallax = () => {
+        const parallaxScale = motionLevel === "intense" ? 1.3 : 0.72;
+
+        parallaxNodes.forEach((node) => {
+          const depth = Number(node.dataset.parallax || "0");
+          const x = pointerX * depth * parallaxScale;
+          const y = pointerY * depth * parallaxScale;
+          node.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        });
+
+        parallaxRaf = null;
+      };
+
+      const queueParallax = () => {
+        if (parallaxRaf) {
+          return;
+        }
+
+        parallaxRaf = window.requestAnimationFrame(renderParallax);
+      };
+
+      const applyRevealProgress = (node: HTMLElement, progress: number) => {
+        node.style.setProperty("--reveal-progress", progress.toFixed(3));
+        if (progress > 0.08) {
+          node.classList.add("is-revealed");
+        } else {
+          node.classList.remove("is-revealed");
+        }
+      };
+
+      const renderReveal = () => {
+        const viewportHeight = window.innerHeight;
+        const startLine = viewportHeight * 0.92;
+        const endLine = viewportHeight * 0.2;
+        const distance = startLine - endLine;
+
+        revealNodes.forEach((node) => {
+          const rect = node.getBoundingClientRect();
+          const rawProgress = (startLine - rect.top) / distance;
+          const progress = Math.max(0, Math.min(1, rawProgress));
+          applyRevealProgress(node, progress);
+        });
+
+        revealRaf = null;
+      };
+
+      const queueReveal = () => {
+        if (revealRaf) {
+          return;
+        }
+
+        revealRaf = window.requestAnimationFrame(renderReveal);
+      };
+
+      const applyMotion = (level: "subtle" | "intense") => {
+        motionLevel = level;
+        root.setAttribute("data-motion", level);
+
+        if (!prefersReducedMotion()) {
+          queueReveal();
+          queueParallax();
+        }
+
+        initAos(level);
+      };
+
+      const playGsapIntro = () => {
+        if (prefersReducedMotion() || introNodes.length === 0) {
+          return;
+        }
+
+        gsap.set(introNodes, { autoAlpha: 0, y: 18 });
+        gsap.to(introNodes, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.72,
+          ease: "power3.out",
+          stagger: 0.08,
+          clearProps: "opacity,transform",
+          delay: 0.05,
+        });
+      };
+
+      const playReloadLoader = (onComplete?: () => void) => {
+        if (!pageLoader || !pageLoaderPopup) {
+          onComplete?.();
+          return;
+        }
+
+        let finished = false;
+        const finish = () => {
+          if (finished) {
+            return;
+          }
+          finished = true;
+          pageLoader.classList.add("is-hidden");
+          pageLoader.remove();
+          onComplete?.();
+        };
+
+        const hardTimeout = window.setTimeout(() => {
+          finish();
+        }, 3900);
+
+        if (prefersReducedMotion()) {
+          window.setTimeout(() => {
+            window.clearTimeout(hardTimeout);
+            finish();
+          }, 1100);
+          return;
+        }
+
+        gsap.set(pageLoader, { autoAlpha: 1 });
+
+        const loaderTimeline = gsap.timeline({
+          defaults: { overwrite: "auto" },
+        });
+
+        loaderTimeline.fromTo(
+          pageLoaderPopup,
+          { autoAlpha: 0, y: 22, scale: 0.94 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.46,
+            ease: "power3.out",
+          }
+        );
+
+        if (pageLoaderEmblem) {
+          loaderTimeline.fromTo(
+            pageLoaderEmblem,
+            { autoAlpha: 0, y: 8, scale: 0.76 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.34,
+              ease: "power3.out",
+            },
+            "<0.06"
+          );
+        }
+
+        if (pageLoaderTitle) {
+          loaderTimeline.fromTo(
+            pageLoaderTitle,
+            { autoAlpha: 0, y: 12 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: 0.42,
+              ease: "power3.out",
+            },
+            "<0.08"
+          );
+        }
+
+        if (pageLoaderLabel) {
+          loaderTimeline.fromTo(
+            pageLoaderLabel,
+            { autoAlpha: 0, y: 8 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: 0.35,
+              ease: "power3.out",
+            },
+            "<0.08"
+          );
+        }
+
+        if (pageLoaderSubline) {
+          loaderTimeline.fromTo(
+            pageLoaderSubline,
+            { autoAlpha: 0, y: 7 },
+            {
+              autoAlpha: 0.95,
+              y: 0,
+              duration: 0.34,
+              ease: "power2.out",
+            },
+            "<0.06"
+          );
+        }
+
+        if (pageLoaderBar) {
+          loaderTimeline.fromTo(
+            pageLoaderBar,
+            { scaleX: 0 },
+            {
+              scaleX: 1,
+              duration: 1.65,
+              ease: "power2.inOut",
+              transformOrigin: "left center",
+            },
+            "<0.08"
+          );
+        }
+
+        if (pageLoaderEmblemRing) {
+          loaderTimeline.fromTo(
+            pageLoaderEmblemRing,
+            { rotate: 0 },
+            {
+              rotate: 180,
+              duration: 1.6,
+              ease: "none",
+            },
+            "<"
+          );
+        }
+
+        if (pageLoaderEmblemCore) {
+          loaderTimeline.to(
+            pageLoaderEmblemCore,
+            {
+              scale: 1.12,
+              duration: 0.26,
+              yoyo: true,
+              repeat: 3,
+              ease: "sine.inOut",
+            },
+            "<0.2"
+          );
+        }
+
+        loaderTimeline.to(pageLoaderPopup, {
+          autoAlpha: 0,
+          y: -14,
+          scale: 0.985,
+          duration: 0.36,
+          ease: "power2.in",
+        });
+
+        loaderTimeline.to(
+          pageLoader,
+          {
+            autoAlpha: 0,
+            duration: 0.42,
+            ease: "power2.inOut",
+            onComplete: () => {
+              window.clearTimeout(hardTimeout);
+              finish();
+            },
+          },
+          "<0.05"
+        );
+      };
+
+      const initAnimatedCursor = () => {
+        if (!(cursorRing instanceof HTMLElement) || !(cursorCore instanceof HTMLElement)) {
+          return () => {};
+        }
+
+        document.body.classList.add("has-custom-cursor");
+
+        let targetX = window.innerWidth * 0.5;
+        let targetY = window.innerHeight * 0.5;
+        let coreX = targetX;
+        let coreY = targetY;
+        let ringX = targetX;
+        let ringY = targetY;
+        let coreScale = 1;
+        let ringScale = 1;
+        let targetCoreScale = 1;
+        let targetRingScale = 1;
+        let isPointerDown = false;
+        let isInteractive = false;
+        let isTextInput = false;
+        let cursorRaf: number | null = null;
+
+        const updateCursorClasses = () => {
+          document.body.classList.toggle("cursor-hovering", isInteractive);
+          document.body.classList.toggle("cursor-text", isTextInput);
+          document.body.classList.toggle("cursor-pressed", isPointerDown);
+        };
+
+        const syncTargetType = (target: EventTarget | null) => {
+          const targetElement = target instanceof Element ? target : null;
+          const interactiveTarget =
+            targetElement?.closest(
+              "a, button, summary, label, input, textarea, select, [role='button'], [data-cursor='interactive']"
+            ) || null;
+          const textInputTarget =
+            targetElement?.closest(
+              "input[type='text'], input[type='email'], input[type='search'], input[type='password'], input[type='url'], input[type='tel'], textarea, [contenteditable='true'], [data-cursor='text']"
+            ) || null;
+
+          isInteractive = Boolean(interactiveTarget);
+          isTextInput = Boolean(textInputTarget);
+
+          targetCoreScale = isPointerDown ? 0.78 : isInteractive ? 0.86 : 1;
+          targetRingScale = isPointerDown
+            ? 0.74
+            : isTextInput
+              ? 0.66
+              : isInteractive
+                ? 1.34
+                : 1;
+
+          updateCursorClasses();
+        };
+
+        const draw = () => {
+          coreX += (targetX - coreX) * 0.34;
+          coreY += (targetY - coreY) * 0.34;
+          ringX += (targetX - ringX) * 0.18;
+          ringY += (targetY - ringY) * 0.18;
+          coreScale += (targetCoreScale - coreScale) * 0.24;
+          ringScale += (targetRingScale - ringScale) * 0.2;
+
+          cursorCore.style.transform = `translate3d(${coreX}px, ${coreY}px, 0) translate(-50%, -50%) scale(${coreScale})`;
+          cursorRing.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${ringScale})`;
+
+          cursorRaf = window.requestAnimationFrame(draw);
+        };
+
+        const onPointerMove = (event: PointerEvent) => {
+          targetX = event.clientX;
+          targetY = event.clientY;
+          document.body.classList.add("cursor-visible");
+          cursorCore.style.opacity = "1";
+          cursorRing.style.opacity = "1";
+          cursorCore.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%) scale(${coreScale})`;
+          cursorRing.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%) scale(${ringScale})`;
+          syncTargetType(event.target);
+        };
+
+        const onPointerLeave = () => {
+          document.body.classList.remove("cursor-visible");
+          cursorCore.style.opacity = "0";
+          cursorRing.style.opacity = "0";
+        };
+
+        const onPointerDown = (event: PointerEvent) => {
+          isPointerDown = true;
+          syncTargetType(event.target);
+        };
+
+        const onPointerUp = (event: PointerEvent) => {
+          isPointerDown = false;
+          syncTargetType(event.target);
+        };
+
+        const onPointerOver = (event: PointerEvent) => {
+          syncTargetType(event.target);
+        };
+
+        window.addEventListener("pointermove", onPointerMove, { passive: true });
+        window.addEventListener("pointerleave", onPointerLeave, { passive: true });
+        window.addEventListener("blur", onPointerLeave);
+        window.addEventListener("pointerdown", onPointerDown, { passive: true });
+        window.addEventListener("pointerup", onPointerUp, { passive: true });
+        window.addEventListener("pointerover", onPointerOver, { passive: true });
+
+        cursorRaf = window.requestAnimationFrame(draw);
+
+        return () => {
+          window.removeEventListener("pointermove", onPointerMove);
+          window.removeEventListener("pointerleave", onPointerLeave);
+          window.removeEventListener("blur", onPointerLeave);
+          window.removeEventListener("pointerdown", onPointerDown);
+          window.removeEventListener("pointerup", onPointerUp);
+          window.removeEventListener("pointerover", onPointerOver);
+
+          if (cursorRaf) {
+            window.cancelAnimationFrame(cursorRaf);
+            cursorRaf = null;
+          }
+
+          document.body.classList.remove(
+            "has-custom-cursor",
+            "cursor-visible",
+            "cursor-hovering",
+            "cursor-text",
+            "cursor-pressed"
+          );
+          cursorCore.style.opacity = "";
+          cursorRing.style.opacity = "";
+          cursorCore.style.transform = "";
+          cursorRing.style.transform = "";
+        };
+      };
+
+      const applyCursorState = () => {
+        const shouldEnableCursor = finePointerQuery.matches && !prefersReducedMotion();
+
+        if (!shouldEnableCursor) {
+          if (disposeAnimatedCursor) {
+            disposeAnimatedCursor();
+            disposeAnimatedCursor = null;
+          }
+          return;
+        }
+
+        if (!disposeAnimatedCursor) {
+          disposeAnimatedCursor = initAnimatedCursor();
+        }
+      };
+
+      applyTheme(resolveTheme());
+      applyMotion(resolveMotion());
+      applyLanguageMode(resolveLanguageMode());
+      applyCursorState();
+      playReloadLoader(() => {
+        playGsapIntro();
+      });
+
+      if (parallaxNodes.length > 0) {
+        window.addEventListener(
+          "pointermove",
+          (event) => {
+            if (prefersReducedMotion() || window.innerWidth < 900) {
+              return;
+            }
+
+            pointerX = event.clientX / window.innerWidth - 0.5;
+            pointerY = event.clientY / window.innerHeight - 0.5;
+            queueParallax();
+          },
+          { passive: true }
+        );
+
+        window.addEventListener("pointerleave", () => {
+          pointerX = 0;
+          pointerY = 0;
+          queueParallax();
+        });
+      }
+
+      if (revealNodes.length > 0) {
+        if (prefersReducedMotion()) {
+          revealNodes.forEach((node) => {
+            applyRevealProgress(node, 1);
+          });
+        } else {
+          queueReveal();
+          window.addEventListener("scroll", queueReveal, { passive: true });
+          window.addEventListener("resize", queueReveal, { passive: true });
+        }
+      }
+
+      themeToggle?.addEventListener("click", () => {
+        const currentTheme =
+          root.getAttribute("data-theme") === "light" ? "light" : "dark";
+        const nextTheme = currentTheme === "light" ? "dark" : "light";
+        playThemeTransition();
+        applyTheme(nextTheme);
+        try {
+          localStorage.setItem(themeKey, nextTheme);
+        } catch {
+          // Ignore storage access issues in private browsing mode.
+        }
+      });
+
+      languageToggle?.addEventListener("click", () => {
+        const cycleOrder: Array<"auto" | "id" | "en"> = ["auto", "id", "en"];
+        const nextMode =
+          cycleOrder[(cycleOrder.indexOf(languageMode) + 1) % cycleOrder.length];
+
+        applyLanguageMode(nextMode);
+        try {
+          localStorage.setItem(languageKey, nextMode);
+        } catch {
+          // Ignore storage access issues in private browsing mode.
+        }
+      });
+
+      mediaQuery.addEventListener("change", (event) => {
+        if (!getStoredTheme()) {
+          applyTheme(event.matches ? "light" : "dark");
+        }
+      });
+
+      finePointerQuery.addEventListener("change", () => {
+        applyCursorState();
+      });
+
+      reducedMotionQuery.addEventListener("change", () => {
+        initAos(motionLevel);
+        applyCursorState();
+
+        if (revealNodes.length === 0) {
+          return;
+        }
+
+        if (prefersReducedMotion()) {
+          revealNodes.forEach((node) => {
+            applyRevealProgress(node, 1);
+          });
+        } else {
+          queueReveal();
+        }
+      });
+    </script>
   </body>
 </html>
 
@@ -80,11 +1049,56 @@ const { title } = Astro.props;
   }
 
   :root {
-    --background: #101010;
+    --background: #0f1014;
     --sec: #a476ff;
-    --white: #dfdfdf;
-    --white-icon: #f3f3f398;
-    --white-icon-tr: #f3f3f310;
+    --white: #f0f2fc;
+    --white-icon: #b6bed3;
+    --white-icon-tr: rgba(182, 190, 211, 0.2);
+    --component-bg: rgba(21, 25, 35, 0.68);
+    --border-subtle: rgba(182, 190, 211, 0.24);
+    --container: #1a2331;
+    --line: #7484a0;
+    --pink: #b08cff;
+    --ambient-1: rgba(130, 98, 219, 0.32);
+    --ambient-2: rgba(65, 169, 210, 0.24);
+    --logo-filter: brightness(0) invert(1) opacity(0.55);
+    --reveal-travel: 44px;
+    --reveal-blur: 6px;
+    --theme-stagger-step: 42ms;
+    --theme-sheen-duration: 680ms;
+    --theme-orb-duration: 760ms;
+  }
+
+  :root[data-theme="light"] {
+    --background: #f3f5f9;
+    --sec: #7248df;
+    --white: #1f2735;
+    --white-icon: #4f607b;
+    --white-icon-tr: rgba(79, 96, 123, 0.2);
+    --component-bg: rgba(255, 255, 255, 0.74);
+    --border-subtle: rgba(79, 96, 123, 0.28);
+    --container: #dce4f1;
+    --line: #6f7f9a;
+    --pink: #8f6af2;
+    --ambient-1: rgba(165, 146, 234, 0.27);
+    --ambient-2: rgba(91, 179, 223, 0.2);
+    --logo-filter: brightness(0) opacity(0.45);
+  }
+
+  :root[data-motion="subtle"] {
+    --reveal-travel: 28px;
+    --reveal-blur: 3px;
+    --theme-stagger-step: 28ms;
+    --theme-sheen-duration: 540ms;
+    --theme-orb-duration: 640ms;
+  }
+
+  :root[data-motion="intense"] {
+    --reveal-travel: 58px;
+    --reveal-blur: 9px;
+    --theme-stagger-step: 56ms;
+    --theme-sheen-duration: 820ms;
+    --theme-orb-duration: 920ms;
   }
 
   * {
@@ -101,6 +1115,442 @@ const { title } = Astro.props;
   *::selection {
     background-color: var(--sec);
     color: var(--background);
+  }
+
+  body {
+    min-height: 100vh;
+    color: var(--white);
+    background:
+      radial-gradient(
+        1200px 620px at 12% -8%,
+        var(--ambient-1),
+        transparent 60%
+      ),
+      radial-gradient(
+        900px 500px at 88% 0%,
+        var(--ambient-2),
+        transparent 58%
+      ),
+      var(--background);
+    transition:
+      background-color 0.35s ease,
+      color 0.35s ease;
+  }
+
+  .page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 240;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(
+        940px 560px at 50% -12%,
+        color-mix(in srgb, var(--sec) 26%, transparent),
+        transparent 60%
+      ),
+      color-mix(in srgb, var(--background) 80%, black 20%);
+    backdrop-filter: blur(7px);
+  }
+
+  .page-loader.is-hidden {
+    pointer-events: none;
+  }
+
+  .page-loader-popup {
+    position: relative;
+    overflow: hidden;
+    width: min(21rem, calc(100vw - 2rem));
+    padding: 1.1rem 1.04rem 1.06rem;
+    border-radius: 1rem;
+    border: 1px solid var(--border-subtle);
+    background:
+      linear-gradient(
+        140deg,
+        color-mix(in srgb, var(--component-bg) 91%, transparent),
+        color-mix(in srgb, var(--component-bg) 78%, var(--sec) 22%)
+      );
+    box-shadow:
+      0 20px 48px rgba(0, 0, 0, 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .page-loader-popup::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 22%,
+      color-mix(in srgb, var(--sec) 12%, transparent) 48%,
+      transparent 76%
+    );
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .page-loader-emblem {
+    position: relative;
+    width: 2.9rem;
+    height: 2.9rem;
+    margin: 0 auto 0.56rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .page-loader-emblem-core {
+    width: 1.08rem;
+    height: 1.08rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--sec) 75%, white 25%);
+    box-shadow:
+      0 0 0 0.27rem color-mix(in srgb, var(--sec) 18%, transparent),
+      0 0 1.3rem color-mix(in srgb, var(--sec) 45%, transparent);
+  }
+
+  .page-loader-emblem-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--sec) 54%, var(--border-subtle) 46%);
+    border-top-color: color-mix(in srgb, var(--white) 42%, var(--sec) 58%);
+  }
+
+  .page-loader-title {
+    margin-bottom: 0.3rem;
+    text-align: center;
+    color: var(--white);
+    font-size: 0.98rem;
+    letter-spacing: 0.045em;
+    font-weight: 700;
+  }
+
+  .page-loader-label {
+    margin-bottom: 0.2rem;
+    text-align: center;
+    color: var(--white-icon);
+    font-size: 0.78rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .page-loader-subline {
+    margin-bottom: 0.72rem;
+    text-align: center;
+    color: color-mix(in srgb, var(--white-icon) 76%, var(--sec) 24%);
+    font-size: 0.73rem;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+  }
+
+  .page-loader-track {
+    height: 3.5px;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--white-icon-tr) 65%, transparent);
+    overflow: hidden;
+  }
+
+  .page-loader-bar {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--sec) 86%, var(--white) 14%),
+      color-mix(in srgb, var(--sec) 45%, var(--white) 55%)
+    );
+    box-shadow: 0 0 16px color-mix(in srgb, var(--sec) 52%, transparent);
+  }
+
+  .content-shell {
+    position: relative;
+    z-index: 2;
+  }
+
+  .ambient-orb {
+    position: fixed;
+    width: 19rem;
+    height: 19rem;
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.34;
+    filter: blur(8px);
+    will-change: transform, opacity, filter;
+    transition:
+      background 0.35s ease,
+      opacity 0.35s ease;
+  }
+
+  .ambient-orb-one {
+    top: 11vh;
+    left: -5rem;
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--sec) 74%, white 26%),
+      transparent 70%
+    );
+  }
+
+  .ambient-orb-two {
+    bottom: 8vh;
+    right: -4.5rem;
+    width: 17rem;
+    height: 17rem;
+    background: radial-gradient(
+      circle at 60% 40%,
+      color-mix(in srgb, var(--ambient-2) 85%, var(--sec) 15%),
+      transparent 72%
+    );
+  }
+
+  .custom-cursor-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 260;
+    opacity: 0;
+    will-change: transform, opacity, border-color, background-color;
+    transition:
+      opacity 180ms ease,
+      border-color 220ms ease,
+      background-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .custom-cursor-ring {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--sec) 62%, var(--white-icon) 38%);
+    background: radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--sec) 14%, transparent),
+      transparent 72%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--sec) 16%, transparent),
+      0 0 24px color-mix(in srgb, var(--sec) 24%, transparent);
+  }
+
+  .custom-cursor-core {
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--sec) 74%, var(--white) 26%);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--sec) 52%, transparent);
+  }
+
+  body.cursor-visible .custom-cursor-layer {
+    opacity: 1;
+  }
+
+  body.cursor-hovering .custom-cursor-ring {
+    border-color: color-mix(in srgb, var(--sec) 78%, var(--white) 22%);
+    background: radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--sec) 24%, transparent),
+      transparent 72%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--sec) 25%, transparent),
+      0 0 30px color-mix(in srgb, var(--sec) 30%, transparent);
+  }
+
+  body.cursor-text .custom-cursor-ring {
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--white-icon) 65%, var(--sec) 35%);
+  }
+
+  body.cursor-pressed .custom-cursor-core {
+    box-shadow: 0 0 10px color-mix(in srgb, var(--sec) 45%, transparent);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    body.has-custom-cursor,
+    body.has-custom-cursor * {
+      cursor: none !important;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .custom-cursor-layer {
+      display: none;
+    }
+  }
+
+  [data-theme-animate] {
+    will-change: filter, opacity;
+  }
+
+  [data-scroll-reveal] {
+    position: relative;
+    --reveal-progress: 0;
+    opacity: calc(0.2 + var(--reveal-progress) * 0.8);
+    transform: translate3d(
+      0,
+      calc((1 - var(--reveal-progress)) * var(--reveal-travel)),
+      0
+    );
+    filter: blur(calc((1 - var(--reveal-progress)) * var(--reveal-blur)));
+    will-change: opacity, transform, filter;
+    transition:
+      opacity 130ms linear,
+      transform 130ms linear,
+      filter 130ms linear;
+  }
+
+  [data-scroll-reveal]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--sec) 30%, var(--white-icon-tr) 70%),
+      transparent
+    );
+    transform-origin: left center;
+    transform: scaleX(calc(0.45 + var(--reveal-progress) * 0.55));
+    opacity: calc(var(--reveal-progress) * 0.85);
+    transition:
+      transform 130ms linear,
+      opacity 130ms linear;
+    pointer-events: none;
+  }
+
+  [data-scroll-reveal].is-revealed {
+    filter: blur(0);
+  }
+
+  body.theme-switching [data-theme-animate] {
+    animation: theme-sheen var(--theme-sheen-duration)
+      cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(
+      var(--theme-stagger-index, 0) * var(--theme-stagger-step)
+    );
+  }
+
+  body.theme-switching .ambient-orb {
+    animation: orb-pulse var(--theme-orb-duration)
+      cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+
+  @keyframes theme-sheen {
+    0% {
+      opacity: 1;
+      filter: brightness(1) saturate(1);
+    }
+    45% {
+      opacity: 0.8;
+      filter: brightness(1.16) saturate(1.1);
+    }
+    100% {
+      opacity: 1;
+      filter: brightness(1) saturate(1);
+    }
+  }
+
+  @keyframes orb-pulse {
+    0% {
+      opacity: 0.32;
+      filter: blur(8px);
+    }
+    50% {
+      opacity: 0.55;
+      filter: blur(4px);
+    }
+    100% {
+      opacity: 0.34;
+      filter: blur(8px);
+    }
+  }
+
+  .theme-toggle {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    background: var(--component-bg);
+    color: var(--white);
+    display: grid;
+    place-items: center;
+    backdrop-filter: blur(10px);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .theme-toggle:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  }
+
+  .language-toggle {
+    height: 2.4rem;
+    min-width: 5.2rem;
+    padding: 0 0.6rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    background: var(--component-bg);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    backdrop-filter: blur(10px);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .language-toggle:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  }
+
+  .language-state {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  #main-nav .theme-toggle,
+  #main-nav .language-toggle {
+    box-shadow: none;
+    transform: none;
+  }
+
+  #main-nav .theme-toggle:hover,
+  #main-nav .language-toggle:hover {
+    box-shadow: none;
+    transform: none;
+  }
+
+  .theme-icon {
+    display: none;
+    line-height: 0;
+  }
+
+  :root[data-theme="dark"] .theme-icon-moon,
+  :root:not([data-theme]) .theme-icon-moon {
+    display: block;
+  }
+
+  :root[data-theme="light"] .theme-icon-sun {
+    display: block;
   }
 
   /* Scrollbar styles */
@@ -127,5 +1577,77 @@ const { title } = Astro.props;
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--line) var(--container);
+  }
+
+  @media (max-width: 767px) {
+    .page-loader-popup {
+      width: min(17rem, calc(100vw - 1.4rem));
+      padding: 0.9rem 0.9rem 0.95rem;
+    }
+
+    .page-loader-emblem {
+      width: 2.5rem;
+      height: 2.5rem;
+      margin-bottom: 0.46rem;
+    }
+
+    .page-loader-emblem-core {
+      width: 0.96rem;
+      height: 0.96rem;
+    }
+
+    .page-loader-title {
+      font-size: 0.9rem;
+      margin-bottom: 0.24rem;
+    }
+
+    .page-loader-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+    }
+
+    .page-loader-subline {
+      font-size: 0.67rem;
+      margin-bottom: 0.62rem;
+    }
+
+    .language-toggle {
+      min-width: 4.8rem;
+      padding: 0 0.5rem;
+    }
+
+    .ambient-orb {
+      width: 13rem;
+      height: 13rem;
+      opacity: 0.26;
+    }
+
+    .ambient-orb-two {
+      width: 11.5rem;
+      height: 11.5rem;
+    }
+
+    [data-scroll-reveal] {
+      transform: translate3d(
+        0,
+        calc((1 - var(--reveal-progress)) * min(28px, var(--reveal-travel))),
+        0
+      );
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-scroll-reveal] {
+      opacity: 1;
+      transform: none;
+      filter: none;
+      transition: none;
+    }
+
+    [data-scroll-reveal]::after {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
   }
 </style>

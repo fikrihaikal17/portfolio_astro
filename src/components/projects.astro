@@ -1,62 +1,95 @@
 ---
-import { Image } from "astro:assets";
-import svgl from "../../public/svgl.png";
-import stockin from "../../public/stockin.png";
-import moviesfordevs from "../../public/moviesfordevs.png";
-import velez from "../../public/velez.png";
-
 interface Project {
   title: string;
-  image: ImageMetadata;
   link: string;
   preview: string;
-  status: string;
+  statusKey: string;
+  statusText: string;
 }
 
 const projects: Project[] = [
   {
-    title: "MoviesForDevs",
-    image: moviesfordevs as ImageMetadata,
-    link: "https://github.com/gothsec/MoviesForDevs",
-    preview: "https://movies-for-devs.vercel.app",
-    status: "Deployed",
+    title: "Calakan - Islamic PWA",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://calakan.smkn1ciamis.id",
+    statusKey: "projects.status.deployed",
+    statusText: "Deployed",
   },
   {
-    title: "StockIn",
-    image: stockin as ImageMetadata,
-    link: "https://github.com/gothsec/stockin-demo",
-    preview: "https://stockin-demo.vercel.app",
-    status: "On Development",
+    title: "Niskala - Publishing Platform",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://github.com/fikrihaikal17",
+    statusKey: "projects.status.internship",
+    statusText: "Internship Project",
   },
   {
-    title: "Svgl.app",
-    image: svgl as ImageMetadata,
-    link: "https://github.com/pheralb/svgl",
-    preview: "https://svgl.app",
-    status: "Contributor",
+    title: "KWS - Kumpulan Wargi Sukapura",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://github.com/fikrihaikal17",
+    statusKey: "projects.status.internship",
+    statusText: "Internship Project",
   },
   {
-    title: "Rifas Velez Web",
-    image: velez as ImageMetadata,
-    link: "https://github.com/Buga-Software/rifasvelez-web",
-    preview: "https://www.rifasvelez.com",
-    status: "Deployed",
+    title: "Smart Automatic Trash Bin (IoT)",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://github.com/fikrihaikal17",
+    statusKey: "projects.status.prototype",
+    statusText: "Prototype",
+  },
+  {
+    title: "School Robotics Dashboard",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://github.com/fikrihaikal17",
+    statusKey: "projects.status.onDevelopment",
+    statusText: "On Development",
+  },
+  {
+    title: "Internship Task Tracker",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://github.com/fikrihaikal17",
+    statusKey: "projects.status.onDevelopment",
+    statusText: "On Development",
+  },
+  {
+    title: "Smart Classroom Monitor (IoT)",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://github.com/fikrihaikal17",
+    statusKey: "projects.status.prototype",
+    statusText: "Prototype",
+  },
+  {
+    title: "Portfolio CMS Admin",
+    link: "https://github.com/fikrihaikal17",
+    preview: "https://github.com/fikrihaikal17",
+    statusKey: "projects.status.onDevelopment",
+    statusText: "On Development",
   },
 ];
 ---
 
 <section
   id="projects"
-  class="py-12 border-t border-[#ffffff10] text-[var(--white)]"
+  class="py-12 border-t border-[var(--border-subtle)] text-[var(--white)]"
+  data-scroll-reveal
+  data-aos="fade-up"
+  data-theme-animate
 >
   <div class="max-w-5xl mx-auto">
-    <h2 class="text-lg text-[var(--sec)] mb-2 shiny-sec">My work</h2>
-    <h3 class="text-4xl md:text-5xl font-medium mb-8">Projects</h3>
+    <h2 class="text-lg text-[var(--sec)] mb-2 shiny-sec" data-i18n="projects.kicker"
+      >My work</h2
+    >
+    <h3 class="text-4xl md:text-5xl font-medium mb-8" data-i18n="projects.title"
+      >Projects</h3
+    >
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       {
-        projects.map((project) => (
-          <div class="group">
+        projects.map((project, index) => (
+          <div
+            class="group"
+            data-aos="zoom-in-up"
+            data-aos-delay={(80 + index * 70).toString()}
+          >
             <a
               href={project.preview}
               target="_blank"
@@ -64,17 +97,24 @@ const projects: Project[] = [
               class="block"
             >
               <div class="rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 mb-4">
-                <Image
-                  src={project.image}
-                  alt={project.title}
-                  class="w-full h-48 md:h-72 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+                <div
+                  class="w-full h-48 md:h-72 relative overflow-hidden group-hover:scale-105 transition-transform duration-300 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--sec)_38%,transparent),color-mix(in_srgb,var(--component-bg)_78%,transparent))]"
+                  aria-label={`Placeholder preview for ${project.title}`}
+                >
+                  <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_45%)]"></div>
+                  <div class="absolute inset-x-4 bottom-4 px-3 py-2 rounded-lg border border-[var(--white-icon-tr)] bg-[color-mix(in_srgb,var(--component-bg)_86%,transparent)] text-[var(--white-icon)] text-xs tracking-[0.08em] uppercase">
+                    Preview image pending update
+                  </div>
+                </div>
               </div>
               <div class="flex items-center px-3">
                 <div class="flex-grow">
                   <h4 class="text-2xl font-semibold">{project.title}</h4>
-                  <span class="py-1 text-sm text-[var(--white-icon)]">
-                    {project.status}
+                  <span
+                    class="py-1 text-sm text-[var(--white-icon)]"
+                    data-i18n={project.statusKey}
+                  >
+                    {project.statusText}
                   </span>
                 </div>
                 <div class="flex gap-2 ml-auto">
@@ -82,7 +122,7 @@ const projects: Project[] = [
                     target="_blank"
                     href={project.link}
                     aria-label="GitHub"
-                    class="size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-white transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-3 rounded-xl bg-[#1414149c] hover:bg-[var(--white-icon-tr)]"
+                    class="size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-[var(--white)] transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-3 rounded-xl bg-[var(--component-bg)] hover:bg-[var(--white-icon-tr)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -97,7 +137,7 @@ const projects: Project[] = [
                     target="_blank"
                     href={project.preview}
                     aria-label="Preview"
-                    class="size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-white transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-3 rounded-xl bg-[#1414149c] hover:bg-[var(--white-icon-tr)]"
+                    class="size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-[var(--white)] transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-3 rounded-xl bg-[var(--component-bg)] hover:bg-[var(--white-icon-tr)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -117,11 +157,13 @@ const projects: Project[] = [
     </div>
     <a
       target="_blank"
-      href="https://github.com/Gothsec?tab=repositories"
+      href="https://github.com/fikrihaikal17"
       aria-label="GitHub"
-      class="w-full flex items-center justify-center gap-2 mt-9 text-[var(--white-icon)] hover:text-white transition duration-300 ease-in-out border border-[var(--white-icon-tr)] p-3 rounded-full bg-[#1414149c] hover:bg-[var(--white-icon-tr)] hover:scale-105"
+      class="w-full flex items-center justify-center gap-2 mt-9 text-[var(--white-icon)] hover:text-[var(--white)] transition duration-300 ease-in-out border border-[var(--white-icon-tr)] p-3 rounded-full bg-[var(--component-bg)] hover:bg-[var(--white-icon-tr)] hover:scale-105"
     >
-      <span class="md:text-lg text-md">More projects on</span>
+      <span class="md:text-lg text-md" data-i18n="projects.moreOn"
+        >More projects on</span
+      >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"

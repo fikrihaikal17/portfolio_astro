@@ -1,0 +1,182 @@
+---
+export const prerender = false;
+
+import {
+  adminCookieName,
+  createAdminSession,
+  getAdminBySessionToken,
+  revokeExpiredSessions,
+  verifyAdminCredentials,
+} from "@/lib/admin/auth";
+import { logAdminEvent } from "@/lib/admin/repository";
+
+let errorMessage = "";
+
+const existingToken = Astro.cookies.get(adminCookieName)?.value;
+if (existingToken) {
+  const existingUser = await getAdminBySessionToken(existingToken);
+  if (existingUser) {
+    return Astro.redirect("/admin");
+  }
+  Astro.cookies.delete(adminCookieName, { path: "/" });
+}
+
+await revokeExpiredSessions();
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const username = String(formData.get("username") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+
+  if (!username || !password) {
+    errorMessage = "Username dan password wajib diisi.";
+  } else {
+    const adminUser = await verifyAdminCredentials(username, password);
+
+    if (!adminUser) {
+      errorMessage = "Login gagal. Periksa username/password.";
+      await logAdminEvent(
+        "admin_login_failed",
+        "admin-login",
+        `Failed login attempt for username: ${username}`,
+        "warning"
+      );
+    } else {
+      const { token, expiresAt } = await createAdminSession(adminUser.id, Astro.request);
+      const isHttps = new URL(Astro.request.url).protocol === "https:";
+
+      Astro.cookies.set(adminCookieName, token, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: isHttps,
+        expires: expiresAt,
+      });
+
+      await logAdminEvent(
+        "admin_login_success",
+        "admin-login",
+        `Superadmin ${adminUser.username} logged in`,
+        "info",
+        { username: adminUser.username },
+        adminUser.id
+      );
+
+      return Astro.redirect("/admin");
+    }
+  }
+}
+---
+
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Superadmin Login</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", sans-serif;
+        background: radial-gradient(circle at 15% 15%, #1f2d5f, #050816 55%);
+        color: #e8eeff;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: min(460px, 100%);
+        border: 1px solid rgba(126, 161, 255, 0.35);
+        background: rgba(10, 16, 36, 0.9);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      }
+      .kicker {
+        margin: 0 0 8px;
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        color: #9ab6ff;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 30px;
+      }
+      .desc {
+        margin: 0 0 16px;
+        color: #b8c8ef;
+        line-height: 1.5;
+      }
+      .error {
+        margin: 0 0 14px;
+        background: rgba(255, 81, 112, 0.2);
+        border: 1px solid rgba(255, 112, 134, 0.5);
+        color: #ffd8df;
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      label {
+        display: block;
+        margin-bottom: 6px;
+        color: #c8d5f5;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      input {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid rgba(130, 150, 210, 0.35);
+        background: rgba(4, 7, 18, 0.85);
+        color: #eff4ff;
+        font-size: 15px;
+        padding: 11px 12px;
+        box-sizing: border-box;
+        margin-bottom: 12px;
+      }
+      button {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #6c78ff, #53a7ff);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        padding: 11px 12px;
+        cursor: pointer;
+      }
+      .hint {
+        margin-top: 14px;
+        color: #9ab0e1;
+        font-size: 13px;
+      }
+      .hint code {
+        color: #e6efff;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <p class="kicker">Superadmin Panel</p>
+      <h1>Login</h1>
+      <p class="desc">Masuk untuk mengelola CMS, setting website, dan monitoring operasional.</p>
+
+      {errorMessage && <p class="error">{errorMessage}</p>}
+
+      <form method="post">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required />
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+        <button type="submit">Masuk ke Dashboard</button>
+      </form>
+
+      <p class="hint">Default seed: <code>superadmin</code> / <code>ChangeMe123!</code> (ganti segera setelah login).</p>
+    </main>
+  </body>
+</html>

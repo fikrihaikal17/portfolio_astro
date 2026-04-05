@@ -1,0 +1,1093 @@
+---
+export const prerender = false;
+
+import { adminCookieName, getAdminBySessionToken } from "@/lib/admin/auth";
+import {
+  deleteCmsEntry,
+  getActiveSessions,
+  getAllCmsEntries,
+  getAllSettings,
+  getDailyPublicViews,
+  getMonitoringSummary,
+  getRecentMonitoringEvents,
+  logAdminEvent,
+  upsertCmsEntry,
+  upsertSetting,
+} from "@/lib/admin/repository";
+
+const sessionToken = Astro.cookies.get(adminCookieName)?.value;
+if (!sessionToken) {
+  return Astro.redirect("/admin/login");
+}
+
+const currentAdmin = await getAdminBySessionToken(sessionToken);
+if (!currentAdmin) {
+  Astro.cookies.delete(adminCookieName, { path: "/" });
+  return Astro.redirect("/admin/login");
+}
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    if (action === "save-setting") {
+      const key = String(formData.get("setting_key") ?? "").trim();
+      const value = String(formData.get("setting_value") ?? "").trim();
+      const valueTypeRaw = String(formData.get("value_type") ?? "string").trim();
+      const allowedTypes = ["string", "number", "boolean", "json"] as const;
+      const valueType = allowedTypes.includes(valueTypeRaw as (typeof allowedTypes)[number])
+        ? (valueTypeRaw as (typeof allowedTypes)[number])
+        : "string";
+
+      if (!key) {
+        throw new Error("Setting key wajib diisi.");
+      }
+
+      if (valueType === "json") {
+        JSON.parse(value || "{}");
+      }
+
+      await upsertSetting(key, value, valueType, currentAdmin.id);
+      await logAdminEvent(
+        "setting_updated",
+        "admin-panel",
+        `Setting ${key} disimpan oleh ${currentAdmin.username}`,
+        "info",
+        { key, valueType },
+        currentAdmin.id
+      );
+      noticeMessage = "Setting berhasil disimpan.";
+    } else if (action === "save-cms") {
+      const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
+      const title = String(formData.get("title") ?? "").trim();
+      const contentJson = String(formData.get("content_json") ?? "").trim();
+      const isPublished = formData.get("is_published") === "on";
+
+      if (!slug || !title) {
+        throw new Error("Slug dan title CMS wajib diisi.");
+      }
+
+      JSON.parse(contentJson || "{}");
+
+      await upsertCmsEntry(slug, title, contentJson, isPublished, currentAdmin.id);
+      await logAdminEvent(
+        "cms_saved",
+        "admin-panel",
+        `CMS ${slug} disimpan oleh ${currentAdmin.username}`,
+        "info",
+        { slug, isPublished },
+        currentAdmin.id
+      );
+      noticeMessage = "CMS entry berhasil disimpan.";
+    } else if (action === "delete-cms") {
+      const cmsId = Number(formData.get("cms_id") ?? "0");
+      if (!Number.isFinite(cmsId) || cmsId <= 0) {
+        throw new Error("ID CMS tidak valid.");
+      }
+
+      await deleteCmsEntry(cmsId);
+      await logAdminEvent(
+        "cms_deleted",
+        "admin-panel",
+        `CMS ID ${cmsId} dihapus oleh ${currentAdmin.username}`,
+        "warning",
+        { cmsId },
+        currentAdmin.id
+      );
+      noticeMessage = "CMS entry berhasil dihapus.";
+    } else if (action === "write-note") {
+      const note = String(formData.get("monitoring_note") ?? "").trim();
+      if (!note) {
+        throw new Error("Catatan monitoring tidak boleh kosong.");
+      }
+
+      await logAdminEvent(
+        "manual_monitoring_note",
+        "admin-panel",
+        note,
+        "info",
+        null,
+        currentAdmin.id
+      );
+      noticeMessage = "Catatan monitoring tersimpan.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-panel",
+      `Aksi admin gagal: ${errorMessage}`,
+      "error",
+      { action },
+      currentAdmin.id
+    );
+  }
+}
+
+const [settings, cmsEntries, summary, events, sessions, dailyViewsRaw] = await Promise.all([
+  getAllSettings(),
+  getAllCmsEntries(),
+  getMonitoringSummary(),
+  getRecentMonitoringEvents(25),
+  getActiveSessions(25),
+  getDailyPublicViews(14),
+]);
+
+const publishedEntries = cmsEntries.filter((entry) => entry.is_published === 1);
+const publicSettings = settings.filter((setting) => {
+  return (
+    setting.setting_key.startsWith("site_") ||
+    setting.setting_key.startsWith("public_") ||
+    setting.setting_key === "maintenance_mode" ||
+    setting.setting_key === "analytics_enabled"
+  );
+});
+
+const viewsByDate = new Map(dailyViewsRaw.map((item) => [item.view_date, Number(item.total_views) || 0]));
+const dayWindow = 14;
+const filledDailyViews = Array.from({ length: dayWindow }, (_, index) => {
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() - (dayWindow - 1 - index));
+  const key = date.toISOString().slice(0, 10);
+
+  return {
+    view_date: key,
+    total_views: viewsByDate.get(key) ?? 0,
+  };
+});
+
+const totalViews14 = filledDailyViews.reduce((acc, item) => acc + item.total_views, 0);
+const todayViews = filledDailyViews[filledDailyViews.length - 1]?.total_views ?? 0;
+const averageViews = Number((totalViews14 / Math.max(filledDailyViews.length, 1)).toFixed(1));
+
+const compactDailyViews = filledDailyViews.slice(-7);
+const compactMaxViews = Math.max(...compactDailyViews.map((item) => item.total_views), 1);
+const totalViews7 = compactDailyViews.reduce((acc, item) => acc + item.total_views, 0);
+const topViewDay7 = [...compactDailyViews].sort((a, b) => b.total_views - a.total_views)[0] ?? {
+  view_date: "-",
+  total_views: 0,
+};
+const previousDayViews = compactDailyViews[compactDailyViews.length - 2]?.total_views ?? 0;
+const viewDeltaLabel =
+  previousDayViews === 0
+    ? todayViews > 0
+      ? "+100%"
+      : "0%"
+    : `${Math.round(((todayViews - previousDayViews) / previousDayViews) * 100)}%`;
+
+const quickPublishedEntries = [...publishedEntries]
+  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+  .slice(0, 6);
+const quickEvents = events.slice(0, 6);
+const draftEntriesCount = Math.max(cmsEntries.length - publishedEntries.length, 0);
+
+const formatDay = (isoDate: string): string => {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return isoDate;
+  }
+
+  return date.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
+const formatDayLong = (isoDate: string): string => {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return isoDate;
+  }
+
+  return date.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDateTime = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getJsonPreview = (raw: string, maxLength = 180): string => {
+  let content = raw;
+  try {
+    content = JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    content = raw;
+  }
+
+  if (content.length <= maxLength) {
+    return content;
+  }
+
+  return `${content.slice(0, maxLength)}...`;
+};
+---
+
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Superadmin Dashboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", sans-serif;
+        color: #e7edff;
+        background:
+          radial-gradient(circle at 8% 14%, rgba(48, 73, 170, 0.38), transparent 42%),
+          radial-gradient(circle at 82% 5%, rgba(20, 111, 171, 0.28), transparent 32%),
+          #030814;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        min-height: 100vh;
+      }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        border-right: 1px solid rgba(123, 156, 229, 0.24);
+        background: linear-gradient(180deg, rgba(6, 16, 40, 0.98), rgba(2, 9, 24, 0.98));
+        padding: 18px 14px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .brand {
+        border: 1px solid rgba(123, 156, 229, 0.28);
+        background: rgba(8, 20, 52, 0.68);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 21px;
+      }
+      .brand p {
+        margin: 6px 0 0;
+        color: #afc1ec;
+        font-size: 13px;
+      }
+      .sidebar-nav {
+        overflow: auto;
+        display: grid;
+        gap: 5px;
+      }
+      .nav-group {
+        margin: 10px 8px 4px;
+        color: #91abe4;
+        font-size: 11px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .sidebar-link {
+        text-decoration: none;
+        color: #d8e5ff;
+        border: 1px solid rgba(118, 151, 218, 0.17);
+        background: rgba(5, 11, 32, 0.66);
+        border-radius: 11px;
+        padding: 10px 11px;
+        font-size: 13px;
+      }
+      .sidebar-link:hover {
+        border-color: rgba(122, 172, 255, 0.5);
+      }
+      .sidebar-link.primary {
+        background: linear-gradient(90deg, rgba(73, 94, 212, 0.46), rgba(59, 137, 205, 0.42));
+        border-color: rgba(130, 183, 255, 0.62);
+        color: #f3f7ff;
+        font-weight: 600;
+      }
+      .sidebar .logout {
+        width: 100%;
+        border: 1px solid rgba(138, 161, 218, 0.4);
+        border-radius: 10px;
+        background: rgba(11, 20, 45, 0.95);
+        color: #dfe9ff;
+        padding: 10px 12px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .content {
+        padding: 18px 18px 34px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .header h2 {
+        margin: 0;
+        font-size: 30px;
+      }
+      .header p {
+        margin: 6px 0 0;
+        color: #acc0ee;
+      }
+      .status {
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+      .status.ok {
+        border: 1px solid rgba(74, 214, 160, 0.45);
+        background: rgba(28, 124, 96, 0.23);
+      }
+      .status.err {
+        border: 1px solid rgba(255, 120, 138, 0.5);
+        background: rgba(145, 33, 52, 0.25);
+      }
+      .section {
+        border: 1px solid rgba(125, 157, 224, 0.28);
+        background: rgba(7, 14, 33, 0.9);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+      .section h3 {
+        margin: 0;
+        font-size: 21px;
+      }
+      .section .sub {
+        margin: 6px 0 0;
+        color: #a9beee;
+        font-size: 14px;
+      }
+      .metric-grid {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .metric-card {
+        border: 1px solid rgba(128, 158, 221, 0.32);
+        background: rgba(3, 9, 24, 0.88);
+        border-radius: 11px;
+        padding: 12px;
+      }
+      .metric-card .label {
+        margin: 0;
+        color: #a8bcf0;
+        font-size: 12px;
+      }
+      .metric-card .value {
+        margin: 8px 0 0;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .split {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 12px;
+      }
+      .panel {
+        border: 1px solid rgba(130, 160, 223, 0.28);
+        border-radius: 12px;
+        background: rgba(6, 12, 29, 0.82);
+        padding: 12px;
+      }
+      .panel h4 {
+        margin: 0;
+        font-size: 17px;
+      }
+      .panel p {
+        margin: 6px 0 0;
+        color: #a8bbeb;
+        font-size: 13px;
+      }
+      .bar-value {
+        font-size: 11px;
+        color: #cad8f7;
+      }
+      .bar-label {
+        font-size: 10px;
+        color: #8da8df;
+      }
+      .compact-views {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 10px;
+        align-items: end;
+      }
+      .compact-col {
+        display: grid;
+        gap: 5px;
+        justify-items: center;
+      }
+      .compact-track {
+        width: 100%;
+        height: 120px;
+        border-radius: 8px;
+        border: 1px solid rgba(124, 153, 219, 0.23);
+        background: rgba(5, 10, 26, 0.85);
+        display: flex;
+        align-items: end;
+        padding: 3px;
+      }
+      .compact-fill {
+        width: 100%;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #7da9ff, #3f6ddf);
+      }
+      .quick-summary {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+      }
+      .quick-item {
+        border: 1px solid rgba(128, 158, 221, 0.28);
+        border-radius: 10px;
+        background: rgba(4, 9, 23, 0.82);
+        padding: 10px;
+      }
+      .quick-item .label {
+        margin: 0;
+        font-size: 12px;
+        color: #a8bcf0;
+      }
+      .quick-item .value {
+        margin: 7px 0 0;
+        font-size: 23px;
+        font-weight: 700;
+      }
+      .quick-list {
+        margin: 11px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+      }
+      .quick-list li {
+        border: 1px solid rgba(128, 158, 221, 0.22);
+        border-radius: 9px;
+        background: rgba(4, 10, 24, 0.75);
+        padding: 9px 10px;
+      }
+      .tableWrap {
+        margin-top: 12px;
+        overflow: auto;
+        border: 1px solid rgba(132, 157, 220, 0.28);
+        border-radius: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 540px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid rgba(132, 157, 220, 0.2);
+        padding: 9px 10px;
+        vertical-align: top;
+        text-align: left;
+        font-size: 13px;
+      }
+      th {
+        color: #9fb5eb;
+        background: rgba(15, 24, 54, 0.6);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      .muted {
+        color: #9bb0df;
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid rgba(133, 160, 222, 0.4);
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+      .code-preview {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+        color: #dce8ff;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      form {
+        margin: 0;
+      }
+      .form-grid {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .form-group.full {
+        grid-column: 1 / -1;
+      }
+      label {
+        font-size: 13px;
+        color: #b9c8ee;
+      }
+      input,
+      select,
+      textarea {
+        border-radius: 10px;
+        border: 1px solid rgba(137, 162, 222, 0.35);
+        background: rgba(4, 8, 20, 0.88);
+        color: #ebf2ff;
+        padding: 10px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 140px;
+        resize: vertical;
+      }
+      .actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      button {
+        border: 0;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #5f79ff, #4aa8ff);
+        color: white;
+        padding: 10px 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .danger {
+        background: linear-gradient(90deg, #c84b6c, #f06b82);
+      }
+      .manager-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      @media (max-width: 1280px) {
+        .metric-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .split,
+        .manager-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 1024px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid rgba(123, 156, 229, 0.24);
+        }
+        .sidebar-nav {
+          display: flex;
+          flex-wrap: nowrap;
+          overflow: auto;
+          gap: 7px;
+          padding-bottom: 4px;
+        }
+        .sidebar-link {
+          white-space: nowrap;
+        }
+        .nav-group {
+          display: none;
+        }
+      }
+      @media (max-width: 640px) {
+        .content {
+          padding: 14px;
+        }
+        .header {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .header h2 {
+          font-size: 25px;
+        }
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+        .quick-summary {
+          grid-template-columns: 1fr;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <h1>Superadmin Panel</h1>
+          <p>Login: <strong>{currentAdmin.username}</strong> ({currentAdmin.role})</p>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Menu sidebar admin">
+          <p class="nav-group">Menu Utama</p>
+          <a class="sidebar-link primary" href="#monitoring-views">Monitoring - Views Per Hari</a>
+          <a class="sidebar-link" href="#monitoring-content">Monitoring - Konten Web Public</a>
+
+          <p class="nav-group">Manajemen Konten</p>
+          <a class="sidebar-link" href="#cms-manager">CMS Pages</a>
+          <a class="sidebar-link" href="#settings-manager">Website Settings</a>
+
+          <p class="nav-group">Operasional</p>
+          <a class="sidebar-link" href="#monitoring-events">Monitoring Events</a>
+          <a class="sidebar-link" href="#active-sessions">Active Sessions</a>
+        </nav>
+
+        <form method="post" action="/admin/logout" style="margin-top:auto;">
+          <button class="logout" type="submit">Logout</button>
+        </form>
+      </aside>
+
+      <main class="content">
+        <header class="header">
+          <div>
+            <h2>Dashboard Monitoring</h2>
+            <p>Fokus utama: insight traffic views harian dan konten yang sedang live di web public.</p>
+          </div>
+        </header>
+
+        {noticeMessage && <div class="status ok">{noticeMessage}</div>}
+        {errorMessage && <div class="status err">{errorMessage}</div>}
+
+        <section id="monitoring-views" class="section">
+          <h3>Monitoring Views Per Hari</h3>
+          <p class="sub">Ringkasan secukupnya untuk pantau trafik, sisanya fokus ke fungsi dashboard utama.</p>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <p class="label">Views Hari Ini</p>
+              <p class="value">{todayViews}</p>
+              <p class="muted" style="margin:4px 0 0;">Perubahan dari kemarin: {viewDeltaLabel}</p>
+            </article>
+            <article class="metric-card">
+              <p class="label">Total Views (7 Hari)</p>
+              <p class="value">{totalViews7}</p>
+            </article>
+            <article class="metric-card">
+              <p class="label">Rata-rata / Hari</p>
+              <p class="value">{averageViews}</p>
+            </article>
+            <article class="metric-card">
+              <p class="label">Puncak 7 Hari</p>
+              <p class="value">{topViewDay7.total_views}</p>
+              <p class="muted" style="margin:4px 0 0;">{formatDayLong(topViewDay7.view_date)}</p>
+            </article>
+          </div>
+
+          <div class="split">
+            <div class="panel">
+              <h4>Trend 7 Hari</h4>
+              <p>Snapshot ringkas views mingguan tanpa tabel panjang.</p>
+
+              <div class="compact-views" role="img" aria-label="Grafik views harian 7 hari terakhir">
+                {
+                  compactDailyViews.map((item) => {
+                    const ratio = Math.max(Math.round((item.total_views / compactMaxViews) * 100), 8);
+                    return (
+                      <div class="compact-col">
+                        <div class="compact-track">
+                          <div class="compact-fill" style={`height:${ratio}%`} title={`${item.total_views} views`} />
+                        </div>
+                        <span class="bar-value">{item.total_views}</span>
+                        <span class="bar-label">{formatDay(item.view_date)}</span>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            </div>
+
+            <div class="panel">
+              <h4>Ringkasan Dashboard Utama</h4>
+              <p>Fokus utama operasional konten dan health dashboard.</p>
+
+              <div class="quick-summary">
+                <div class="quick-item">
+                  <p class="label">Konten Published</p>
+                  <p class="value">{publishedEntries.length}</p>
+                </div>
+                <div class="quick-item">
+                  <p class="label">Konten Draft</p>
+                  <p class="value">{draftEntriesCount}</p>
+                </div>
+                <div class="quick-item">
+                  <p class="label">Settings Aktif</p>
+                  <p class="value">{summary.totalSettings}</p>
+                </div>
+                <div class="quick-item">
+                  <p class="label">Sesi Aktif</p>
+                  <p class="value">{summary.activeSessions}</p>
+                </div>
+              </div>
+
+              <ul class="quick-list">
+                <li>
+                  <strong>Konten terbaru:</strong>
+                  {quickPublishedEntries[0] ? ` ${quickPublishedEntries[0].title}` : " belum ada konten published."}
+                </li>
+                <li>
+                  <strong>Aktivitas terbaru:</strong>
+                  {quickEvents[0]
+                    ? ` ${quickEvents[0].event_type} (${formatDateTime(quickEvents[0].created_at)})`
+                    : " belum ada aktivitas."}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="monitoring-content" class="section">
+          <h3>Monitoring Konten Web Public</h3>
+          <p class="sub">Lihat konten yang dipublish ke web public plus setting global yang memengaruhi tampilan situs.</p>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <p class="label">Konten Published</p>
+              <p class="value">{publishedEntries.length}</p>
+            </article>
+            <article class="metric-card">
+              <p class="label">Total CMS Pages</p>
+              <p class="value">{summary.totalCmsPages}</p>
+            </article>
+            <article class="metric-card">
+              <p class="label">Public Settings</p>
+              <p class="value">{publicSettings.length}</p>
+            </article>
+            <article class="metric-card">
+              <p class="label">Total Events</p>
+              <p class="value">{summary.totalEvents}</p>
+            </article>
+          </div>
+
+          <div class="split">
+            <div class="panel">
+              <h4>Daftar Konten Published</h4>
+              <p>Data ini mewakili payload CMS yang kemungkinan tampil di website public.</p>
+
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Slug</th>
+                      <th>Title</th>
+                      <th>Preview JSON</th>
+                      <th>Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {publishedEntries.length === 0 ? (
+                      <tr>
+                        <td colspan="4" class="muted">Belum ada konten published.</td>
+                      </tr>
+                    ) : (
+                      publishedEntries.map((entry) => (
+                        <tr>
+                          <td><code>{entry.slug}</code></td>
+                          <td>{entry.title}</td>
+                          <td>
+                            <pre class="code-preview">{getJsonPreview(entry.content_json)}</pre>
+                          </td>
+                          <td>{formatDateTime(entry.updated_at)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h4>Public Settings Snapshot</h4>
+              <p>Setting ini biasanya terpakai langsung oleh layer web public.</p>
+
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Key</th>
+                      <th>Type</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {publicSettings.length === 0 ? (
+                      <tr>
+                        <td colspan="3" class="muted">Tidak ada setting public terdeteksi.</td>
+                      </tr>
+                    ) : (
+                      publicSettings.map((setting) => (
+                        <tr>
+                          <td><code>{setting.setting_key}</code></td>
+                          <td>{setting.value_type}</td>
+                          <td>{setting.setting_value}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="manager-grid">
+          <div id="settings-manager" class="section">
+            <h3>Website Settings (MySQL)</h3>
+            <p class="sub">Tambah atau ubah key-value setting website dari panel admin.</p>
+
+            <form method="post">
+              <input type="hidden" name="action" value="save-setting" />
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="setting_key">Setting Key</label>
+                  <input id="setting_key" name="setting_key" placeholder="site_title" required />
+                </div>
+                <div class="form-group">
+                  <label for="value_type">Value Type</label>
+                  <select id="value_type" name="value_type">
+                    <option value="string">string</option>
+                    <option value="number">number</option>
+                    <option value="boolean">boolean</option>
+                    <option value="json">json</option>
+                  </select>
+                </div>
+                <div class="form-group full">
+                  <label for="setting_value">Setting Value</label>
+                  <textarea id="setting_value" name="setting_value" placeholder='Contoh JSON: {"heroTitle":"Hello"}' required></textarea>
+                </div>
+              </div>
+              <div class="actions">
+                <button type="submit">Simpan Setting</button>
+              </div>
+            </form>
+
+            <div class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {settings.length === 0 ? (
+                    <tr>
+                      <td colspan="4" class="muted">Belum ada setting tersimpan.</td>
+                    </tr>
+                  ) : (
+                    settings.map((setting) => (
+                      <tr>
+                        <td><code>{setting.setting_key}</code></td>
+                        <td>{setting.value_type}</td>
+                        <td>{setting.setting_value}</td>
+                        <td>{formatDateTime(setting.updated_at)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="cms-manager" class="section">
+            <h3>CMS Pages (MySQL)</h3>
+            <p class="sub">Kelola konten CMS section website lewat payload JSON.</p>
+
+            <form method="post">
+              <input type="hidden" name="action" value="save-cms" />
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="slug">Slug</label>
+                  <input id="slug" name="slug" placeholder="home-hero" required />
+                </div>
+                <div class="form-group">
+                  <label for="title">Title</label>
+                  <input id="title" name="title" placeholder="Homepage Hero Content" required />
+                </div>
+                <div class="form-group full">
+                  <label for="content_json">Content JSON</label>
+                  <textarea id="content_json" name="content_json" placeholder='{"headline":"Software Engineer","subtitle":"Backend & IoT"}' required></textarea>
+                </div>
+                <div class="form-group full" style="flex-direction: row; align-items: center;">
+                  <input id="is_published" name="is_published" type="checkbox" checked style="width:auto; margin:0;" />
+                  <label for="is_published" style="margin:0;">Published</label>
+                </div>
+              </div>
+              <div class="actions">
+                <button type="submit">Simpan CMS Entry</button>
+              </div>
+            </form>
+
+            <div class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Slug</th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Updated</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cmsEntries.length === 0 ? (
+                    <tr>
+                      <td colspan="5" class="muted">Belum ada CMS page tersimpan.</td>
+                    </tr>
+                  ) : (
+                    cmsEntries.map((entry) => (
+                      <tr>
+                        <td><code>{entry.slug}</code></td>
+                        <td>{entry.title}</td>
+                        <td>
+                          <span class="badge">{entry.is_published === 1 ? "Published" : "Draft"}</span>
+                        </td>
+                        <td>{formatDateTime(entry.updated_at)}</td>
+                        <td>
+                          <form method="post" onsubmit="return confirm('Hapus CMS entry ini?');">
+                            <input type="hidden" name="action" value="delete-cms" />
+                            <input type="hidden" name="cms_id" value={entry.id} />
+                            <button class="danger" type="submit">Hapus</button>
+                          </form>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="monitoring-events" class="section">
+          <h3>Monitoring Events</h3>
+          <p class="sub">Catatan operasional dari login, update CMS/setting, dan aktivitas admin.</p>
+
+          <form method="post" style="margin-top: 10px;">
+            <input type="hidden" name="action" value="write-note" />
+            <div class="form-group">
+              <label for="monitoring_note">Tambah Catatan Monitoring Manual</label>
+              <textarea id="monitoring_note" name="monitoring_note" placeholder="Contoh: Perubahan konten homepage untuk campaign April" required></textarea>
+            </div>
+            <div class="actions">
+              <button type="submit">Simpan Catatan</button>
+            </div>
+          </form>
+
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Type</th>
+                  <th>Level</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.length === 0 ? (
+                  <tr>
+                    <td colspan="4" class="muted">Belum ada event monitoring.</td>
+                  </tr>
+                ) : (
+                  events.map((event) => (
+                    <tr>
+                      <td>{formatDateTime(event.created_at)}</td>
+                      <td>{event.event_type}</td>
+                      <td>{event.level}</td>
+                      <td>{event.message}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="active-sessions" class="section">
+          <h3>Active Admin Sessions</h3>
+          <p class="sub">Pantau sesi login superadmin aktif dari browser atau IP berbeda.</p>
+
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Admin</th>
+                  <th>IP</th>
+                  <th>User Agent</th>
+                  <th>Last Seen</th>
+                  <th>Expires</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.length === 0 ? (
+                  <tr>
+                    <td colspan="5" class="muted">Tidak ada sesi aktif.</td>
+                  </tr>
+                ) : (
+                  sessions.map((session) => (
+                    <tr>
+                      <td>
+                        <strong>{session.username}</strong>
+                        <div class="muted">{session.role}</div>
+                      </td>
+                      <td>{session.ip_address}</td>
+                      <td>{session.user_agent}</td>
+                      <td>{formatDateTime(session.last_seen_at)}</td>
+                      <td>{formatDateTime(session.expires_at)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,110 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { formatDateTime } from "@/lib/admin/view-formatters";
+import {
+  getRecentMonitoringEvents,
+  logAdminEvent,
+} from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    if (action === "write-note") {
+      const note = String(formData.get("monitoring_note") ?? "").trim();
+      if (!note) {
+        throw new Error("Catatan monitoring tidak boleh kosong.");
+      }
+
+      await logAdminEvent(
+        "manual_monitoring_note",
+        "admin-events",
+        note,
+        "info",
+        null,
+        admin.id
+      );
+      noticeMessage = "Catatan monitoring tersimpan.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-events",
+      `Aksi events gagal: ${errorMessage}`,
+      "error",
+      { action },
+      admin.id
+    );
+  }
+}
+
+const events = await getRecentMonitoringEvents(40);
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Monitoring Events"
+  pageDescription="Catatan aktivitas operasional admin pada halaman URL khusus events."
+  activePath="/admin/events"
+  noticeMessage={noticeMessage}
+  errorMessage={errorMessage}
+>
+  <section class="section">
+    <h3>Monitoring Events</h3>
+    <p class="sub">Catatan operasional dari login, update CMS/setting, dan aktivitas admin.</p>
+
+    <form method="post" style="margin-top: 10px;">
+      <input type="hidden" name="action" value="write-note" />
+      <div class="form-group">
+        <label for="monitoring_note">Tambah Catatan Monitoring Manual</label>
+        <textarea id="monitoring_note" name="monitoring_note" placeholder="Contoh: Perubahan konten homepage untuk campaign April" required></textarea>
+      </div>
+      <div class="actions">
+        <button type="submit">Simpan Catatan</button>
+      </div>
+    </form>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Type</th>
+            <th>Level</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {events.length === 0 ? (
+            <tr>
+              <td colspan="4" class="muted">Belum ada event monitoring.</td>
+            </tr>
+          ) : (
+            events.map((event) => (
+              <tr>
+                <td>{formatDateTime(event.created_at)}</td>
+                <td>{event.event_type}</td>
+                <td>{event.level}</td>
+                <td>{event.message}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>

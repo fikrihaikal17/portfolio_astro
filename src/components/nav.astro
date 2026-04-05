@@ -1,5 +1,6 @@
 ---
 interface NavItem {
+  key: string;
   label: string;
   href: string;
   icon: string;
@@ -7,16 +8,37 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
+    key: "nav.home",
     label: "Home",
     href: "#home",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V9.48907C3 9.18048 3.14247 8.88917 3.38606 8.69972L11.3861 2.47749C11.7472 2.19663 12.2528 2.19663 12.6139 2.47749L20.6139 8.69972C20.8575 8.88917 21 9.18048 21 9.48907V20ZM19 19V9.97815L12 4.53371L5 9.97815V19H19Z"></path></svg>`,
   },
   {
-    label: "Projects",
-    href: "#projects",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M4 5V19H20V7H11.5858L9.58579 5H4ZM12.4142 5H21C21.5523 5 22 5.44772 22 6V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H10.4142L12.4142 5Z"></path></svg>`,
+    key: "nav.expertise",
+    label: "Expertise",
+    href: "#expertise",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path></svg>`,
   },
   {
+    key: "nav.experience",
+    label: "Experience",
+    href: "#experience",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M3 3H21V5H3V3ZM3 19H21V21H3V19ZM5 7H19V17H5V7ZM9 9V15H11V13H15V11H11V9H9Z"></path></svg>`,
+  },
+  {
+    key: "nav.work",
+    label: "Work",
+    href: "#projects",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M7 2V4H17V2H19V4H21C21.5523 4 22 4.44772 22 5V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V5C2 4.44772 2.44772 4 3 4H5V2H7ZM20 10H4V19H20V10ZM8 12V14H6V12H8Z"></path></svg>`,
+  },
+  {
+    key: "nav.certification",
+    label: "Certification",
+    href: "#certification",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2L19 6V12C19 16.4183 16.134 20.4444 12 22C7.866 20.4444 5 16.4183 5 12V6L12 2ZM12 4.236L7 7.093V12C7 15.433 9.047 18.49 12 19.866C14.953 18.49 17 15.433 17 12V7.093L12 4.236ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z"></path></svg>`,
+  },
+  {
+    key: "nav.contact",
     label: "Contact",
     href: "#contact",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21.7267 2.95694L16.2734 22.0432C16.1225 22.5716 15.7979 22.5956 15.5563 22.1126L11 13L1.9229 9.36919C1.41322 9.16532 1.41953 8.86022 1.95695 8.68108L21.0432 2.31901C21.5716 2.14285 21.8747 2.43866 21.7267 2.95694ZM19.0353 5.09647L6.81221 9.17085L12.4488 11.4255L15.4895 17.5068L19.0353 5.09647Z"></path></svg>`,
@@ -24,28 +46,33 @@ const navItems: NavItem[] = [
 ];
 ---
 
-<div class="flex justify-center w-full">
+<div class="relative z-[140] flex justify-center w-full">
   <nav
     id="main-nav"
-    class="fixed left-1/2 -translate-x-1/2 z-[100] bg-[var(--background)] border border-1 border-transparent backdrop-blur-xl transition-all duration-500 ease-in-out md:top-6 md:bottom-auto bottom-0 w-[80%]"
+    class="fixed left-1/2 -translate-x-1/2 z-[100] bg-[var(--component-bg)] border border-1 border-[var(--border-subtle)] backdrop-blur-xl transition-all duration-500 ease-in-out md:top-6 md:bottom-auto bottom-0 w-[80%]"
+    data-theme-animate
+    data-intro
   >
-    <div class="container mx-auto flex justify-center items-center p-3">
+    <div class="mx-auto flex w-full items-center justify-center px-3 py-2.5 md:px-5 md:py-3.5">
       <ul
-        class="flex w-full justify-between md:space-x-6 md:justify-center md:gap-12 gap-6"
+        class="flex w-full max-w-[56rem] justify-between md:justify-center md:gap-6 gap-2"
       >
         {
           navItems.map((item) => (
             <li class="flex-1 md:flex-none">
               <a
                 href={item.href}
-                class="flex flex-col items-center gap-1 text-[var(--white-icon)] transition-colors text-xs md:text-base relative group"
+                class="flex flex-col items-center gap-1 text-[var(--white-icon)] transition-colors text-xs md:text-base relative"
               >
-                <div class="absolute -left-6 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full transition-all duration-300 scale-0 opacity-0 bg-[#A9FF5B] nav-indicator hidden md:block" />
                 <span class="md:hidden flex items-center justify-center w-6 h-6">
                   <fragment set:html={item.icon} />
                 </span>
-                <span class="hidden md:inline-block">{item.label}</span>
-                <span class="md:hidden">{item.label}</span>
+                <span class="hidden md:inline-block" data-i18n={item.key}
+                  >{item.label}</span
+                >
+                <span class="md:hidden" data-i18n={item.key}
+                  >{item.label}</span
+                >
               </a>
             </li>
           ))
@@ -53,30 +80,186 @@ const navItems: NavItem[] = [
       </ul>
     </div>
   </nav>
+
+  <div class="mode-controls" data-theme-animate data-intro>
+    <button
+      id="language-toggle"
+      type="button"
+      class="language-toggle"
+      aria-label="Switch language"
+      title="Switch language"
+    >
+      <span id="language-toggle-label" class="language-state">AUTO</span>
+    </button>
+
+    <span class="mode-controls-divider" aria-hidden="true"></span>
+
+    <button
+      id="theme-toggle"
+      type="button"
+      class="theme-toggle"
+      aria-label="Switch theme"
+      title="Switch theme"
+    >
+      <span class="theme-icon theme-icon-sun" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="19"
+          height="19"
+          fill="currentColor"
+        >
+          <path d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM20 11H23V13H20V11ZM1 11H4V13H1V11ZM18.364 7.05025L16.9497 5.63604L19.0711 3.51472L20.4853 4.92893L18.364 7.05025ZM5.63604 18.364L7.05025 16.9497L4.92893 14.8284L3.51472 16.2426L5.63604 18.364Z" />
+        </svg>
+      </span>
+      <span class="theme-icon theme-icon-moon" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="19"
+          height="19"
+          fill="currentColor"
+        >
+          <path d="M10 7C10 11.9706 14.0294 16 19 16C19.5635 16 20.115 15.9482 20.65 15.8494C19.6783 19.3854 16.444 22 12.6 22C7.85035 22 4 18.1496 4 13.4C4 9.55602 6.61463 6.32172 10.1506 5.34999C10.0518 5.88496 10 6.43652 10 7Z" />
+        </svg>
+      </span>
+    </button>
+  </div>
 </div>
 <style>
   nav {
     transform: translateX(-50%);
-    background-color: var(--background);
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--component-bg) 92%, transparent);
+    isolation: isolate;
+    pointer-events: auto;
     transition:
       background-color 0.3s ease,
       border-radius 0.3s ease,
       border-color 0.3s ease;
   }
 
-  nav.scrolling {
-    background-color: var(--component-bg);
-    border-color: #ffffff10;
+  ul {
+    position: relative;
+    z-index: 2;
+  }
+
+  .mode-controls {
+    position: fixed;
+    top: 1.875rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.36rem;
+    padding: 0.24rem;
     border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--background) 72%, transparent);
+    backdrop-filter: blur(12px);
+    z-index: 130;
   }
 
-  nav a.active .nav-indicator {
-    transform: translateY(-50%) scale(1);
-    opacity: 1;
+  .mode-controls :global(.language-toggle),
+  .mode-controls :global(.theme-toggle) {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    backdrop-filter: none;
+    transform: none;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
   }
 
+  .mode-controls :global(.language-toggle) {
+    min-width: 3.9rem;
+    height: 2rem;
+    padding: 0 0.7rem;
+    border-radius: 9999px;
+    border: 0;
+    background: color-mix(in srgb, var(--component-bg) 46%, transparent);
+  }
+
+  .mode-controls :global(.theme-toggle) {
+    width: 2.05rem;
+    height: 2.05rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: var(--white-icon);
+  }
+
+  .mode-controls :global(.theme-icon) {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    pointer-events: none;
+  }
+
+  .mode-controls :global(.theme-icon svg) {
+    display: block;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0 auto;
+  }
+
+  :root[data-theme="dark"] .mode-controls :global(.theme-icon-moon),
+  :root:not([data-theme]) .mode-controls :global(.theme-icon-moon),
+  :root[data-theme="light"] .mode-controls :global(.theme-icon-sun) {
+    display: flex;
+  }
+
+  .mode-controls-divider {
+    width: 1px;
+    height: 1.15rem;
+    background: var(--border-subtle);
+    opacity: 0.85;
+  }
+
+  .mode-controls :global(.theme-toggle:hover),
+  .mode-controls :global(.language-toggle:hover) {
+    transform: none;
+    box-shadow: none;
+  }
+
+  nav.scrolling {
+    background: color-mix(in srgb, var(--component-bg) 88%, transparent);
+    border-color: var(--border-subtle);
+  }
+
+  nav a {
+    position: relative;
+    z-index: 3;
+    pointer-events: auto;
+    padding-bottom: 0.16rem;
+  }
+
+  nav a::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -0.22rem;
+    width: 0;
+    height: 2px;
+    border-radius: 9999px;
+    background: var(--sec);
+    transform: translateX(-50%);
+    transition: width 0.22s ease;
+  }
+
+  nav a:hover::after,
+  nav a.active::after {
+    width: 68%;
+  }
+
+  nav a:hover,
   nav a.active {
-    color: white !important;
+    color: var(--white) !important;
   }
 
   @media (max-width: 767px) {
@@ -87,12 +270,45 @@ const navItems: NavItem[] = [
       left: 50%;
       position: fixed;
       border-radius: 1rem 1rem 0 0;
-      border-color: #ffffff10;
+      border-color: var(--border-subtle);
+    }
+
+    .mode-controls {
+      top: calc(0.85rem + env(safe-area-inset-top, 0px));
+      bottom: auto;
+      right: 0.85rem;
+      padding: 0.18rem;
+      gap: 0.18rem;
+    }
+
+    .mode-controls :global(.language-toggle) {
+      min-width: 3.2rem;
+      height: 1.85rem;
+      padding: 0 0.5rem;
+    }
+
+    .mode-controls :global(.language-state) {
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+    }
+
+    .mode-controls :global(.theme-toggle) {
+      width: 1.85rem;
+      height: 1.85rem;
+    }
+
+    .mode-controls-divider {
+      height: 1rem;
     }
 
     nav.scrolling {
       border-radius: 1rem 1rem 0 0;
       background-color: var(--component-bg);
+    }
+
+    nav a::after {
+      bottom: -0.22rem;
+      height: 2px;
     }
 
     body {
@@ -103,8 +319,26 @@ const navItems: NavItem[] = [
 
 <script>
   const nav = document.getElementById("main-nav");
+  const modeControls = document.querySelector<HTMLElement>(".mode-controls");
   const maxScroll = 1000;
   let rafId: number | null = null;
+
+  function alignModeControls() {
+    if (!nav || !modeControls) {
+      return;
+    }
+
+    if (window.innerWidth < 768) {
+      modeControls.style.removeProperty("top");
+      return;
+    }
+
+    const navRect = nav.getBoundingClientRect();
+    const controlsRect = modeControls.getBoundingClientRect();
+    const targetTop = navRect.top + (navRect.height - controlsRect.height) / 2;
+
+    modeControls.style.top = `${Math.max(targetTop, 0)}px`;
+  }
 
   function updateNav() {
     if (window.scrollY > 0) {
@@ -113,7 +347,7 @@ const navItems: NavItem[] = [
       const scrollProgress = Math.min(window.scrollY / maxScroll, 1);
       const easeProgress = 1 - Math.pow(1 - scrollProgress, 4);
 
-      const minWidth = 528;
+      const minWidth = 620;
       const maxWidth = window.innerWidth * 0.8;
       const currentWidth = maxWidth - (maxWidth - minWidth) * easeProgress;
 
@@ -124,6 +358,8 @@ const navItems: NavItem[] = [
       nav?.classList.remove("scrolling");
       nav?.style.setProperty("width", "80%");
     }
+
+    alignModeControls();
     rafId = null;
   }
 
@@ -137,44 +373,141 @@ const navItems: NavItem[] = [
     { passive: true }
   );
 
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+  window.addEventListener(
+    "resize",
+    () => {
+      alignModeControls();
+    },
+    { passive: true }
+  );
+
+  requestAnimationFrame(() => {
+    alignModeControls();
+  });
+
+  const navAnchors = document.querySelectorAll<HTMLAnchorElement>(
+    "#main-nav a[href^='#']"
+  );
+
+  const sections = Array.from(navAnchors)
+    .map((anchor) => anchor.getAttribute("href")?.slice(1) || "")
+    .map((id) => document.getElementById(id))
+    .filter((el): el is HTMLElement => Boolean(el));
+
+  const getOrderedSectionEntries = () => {
+    return sections
+      .map((section) => ({
+        section,
+        top: section.getBoundingClientRect().top + window.scrollY,
+      }))
+      .sort((a, b) => a.top - b.top);
+  };
+
+  const setActive = (id: string) => {
+    navAnchors.forEach((link) => {
+      link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
+    });
+  };
+
+  const resolveActiveByScroll = () => {
+    const orderedSections = getOrderedSectionEntries();
+
+    if (!orderedSections.length) {
+      return;
+    }
+
+    const marker = window.scrollY + window.innerHeight * 0.35;
+    let currentId = orderedSections[0].section.id;
+
+    orderedSections.forEach(({ section, top }) => {
+      if (marker >= top - 1) {
+        currentId = section.id;
+      }
+    });
+
+    setActive(currentId);
+  };
+
+  navAnchors.forEach((anchor) => {
     anchor.addEventListener("click", function (e) {
       e.preventDefault();
       const target = e.currentTarget as HTMLAnchorElement;
       const targetId = target.getAttribute("href")?.substring(1) || "";
       const targetElement = document.getElementById(targetId);
       if (targetElement) {
+        navAnchors.forEach((link) => link.classList.remove("active"));
+        target.classList.add("active");
         targetElement.scrollIntoView({
           behavior: "smooth",
+          block: "start",
         });
       }
     });
   });
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const sections = document.querySelectorAll("section[id]");
-    const navLinks = document.querySelectorAll("nav a[href^='#']");
-    const observerOptions = { threshold: 0.6 };
+  const handleActiveUpdate = () => {
+    resolveActiveByScroll();
+  };
 
-    const observerCallback = (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          navLinks.forEach((link) => link.classList.remove("active"));
-          const id = entry.target.getAttribute("id");
-          const activeLink = document.querySelector(`nav a[href="#${id}"]`);
-          if (activeLink) {
-            activeLink.classList.add("active");
-          }
-        }
-      });
-    };
+  window.addEventListener("scroll", handleActiveUpdate, { passive: true });
 
-    const observer = new IntersectionObserver(
-      observerCallback,
-      observerOptions
-    );
-    sections.forEach((section) => observer.observe(section));
+  document.addEventListener("scroll", handleActiveUpdate, {
+    passive: true,
+    capture: true,
   });
+
+  const scrollingElement = document.scrollingElement;
+  scrollingElement?.addEventListener("scroll", handleActiveUpdate, {
+    passive: true,
+  });
+
+  window.addEventListener(
+    "resize",
+    () => {
+      resolveActiveByScroll();
+    },
+    { passive: true }
+  );
+
+  window.addEventListener("hashchange", () => {
+    const id = window.location.hash.slice(1);
+    if (id) {
+      setActive(id);
+    }
+  });
+
+  const initialId = window.location.hash
+    ? window.location.hash.slice(1)
+    : "home";
+  setActive(initialId);
+
+  requestAnimationFrame(() => {
+    resolveActiveByScroll();
+  });
+
+  const navRuntime = window as Window & {
+    __navActivePollId?: number;
+  };
+
+  if (navRuntime.__navActivePollId) {
+    window.clearInterval(navRuntime.__navActivePollId);
+  }
+
+  navRuntime.__navActivePollId = window.setInterval(() => {
+    resolveActiveByScroll();
+  }, 180);
+
+  let lastScrollY = window.scrollY;
+
+  const watchScrollPosition = () => {
+    if (window.scrollY !== lastScrollY) {
+      lastScrollY = window.scrollY;
+      resolveActiveByScroll();
+    }
+    requestAnimationFrame(watchScrollPosition);
+  };
+
+  requestAnimationFrame(watchScrollPosition);
 </script>
 
 <style>
@@ -185,6 +518,6 @@ const navItems: NavItem[] = [
   }
 
   nav a.active {
-    color: white !important;
+    color: var(--white) !important;
   }
 </style>

@@ -1,0 +1,138 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { formatDateTime } from "@/lib/admin/view-formatters";
+import {
+  getAllSettings,
+  logAdminEvent,
+  upsertSetting,
+} from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    if (action === "save-setting") {
+      const key = String(formData.get("setting_key") ?? "").trim();
+      const value = String(formData.get("setting_value") ?? "").trim();
+      const valueTypeRaw = String(formData.get("value_type") ?? "string").trim();
+      const allowedTypes = ["string", "number", "boolean", "json"] as const;
+      const valueType = allowedTypes.includes(valueTypeRaw as (typeof allowedTypes)[number])
+        ? (valueTypeRaw as (typeof allowedTypes)[number])
+        : "string";
+
+      if (!key) {
+        throw new Error("Setting key wajib diisi.");
+      }
+
+      if (valueType === "json") {
+        JSON.parse(value || "{}");
+      }
+
+      await upsertSetting(key, value, valueType, admin.id);
+      await logAdminEvent(
+        "setting_updated",
+        "admin-settings",
+        `Setting ${key} disimpan oleh ${admin.username}`,
+        "info",
+        { key, valueType },
+        admin.id
+      );
+      noticeMessage = "Setting berhasil disimpan.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-settings",
+      `Aksi settings gagal: ${errorMessage}`,
+      "error",
+      { action },
+      admin.id
+    );
+  }
+}
+
+const settings = await getAllSettings();
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Website Settings"
+  pageDescription="Kelola key-value global website lewat URL halaman khusus settings."
+  activePath="/admin/settings"
+  noticeMessage={noticeMessage}
+  errorMessage={errorMessage}
+>
+  <section class="section">
+    <h3>Website Settings (MySQL)</h3>
+    <p class="sub">Tambah atau ubah key-value setting website dari panel admin.</p>
+
+    <form method="post">
+      <input type="hidden" name="action" value="save-setting" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="setting_key">Setting Key</label>
+          <input id="setting_key" name="setting_key" placeholder="site_title" required />
+        </div>
+        <div class="form-group">
+          <label for="value_type">Value Type</label>
+          <select id="value_type" name="value_type">
+            <option value="string">string</option>
+            <option value="number">number</option>
+            <option value="boolean">boolean</option>
+            <option value="json">json</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label for="setting_value">Setting Value</label>
+          <textarea id="setting_value" name="setting_value" placeholder='Contoh JSON: {"heroTitle":"Hello"}' required></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit">Simpan Setting</button>
+      </div>
+    </form>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Type</th>
+            <th>Value</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {settings.length === 0 ? (
+            <tr>
+              <td colspan="4" class="muted">Belum ada setting tersimpan.</td>
+            </tr>
+          ) : (
+            settings.map((setting) => (
+              <tr>
+                <td><code>{setting.setting_key}</code></td>
+                <td>{setting.value_type}</td>
+                <td>{setting.setting_value}</td>
+                <td>{formatDateTime(setting.updated_at)}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>

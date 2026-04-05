@@ -1,0 +1,84 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { formatDateTime } from "@/lib/admin/view-formatters";
+import { getActiveSessions, getMonitoringSummary } from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+const [sessions, summary] = await Promise.all([
+  getActiveSessions(50),
+  getMonitoringSummary(),
+]);
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Active Sessions"
+  pageDescription="Pantau sesi admin aktif dari browser/IP berbeda pada URL terpisah."
+  activePath="/admin/sessions"
+>
+  <section class="section">
+    <h3>Active Admin Sessions</h3>
+    <p class="sub">Monitoring sesi login superadmin yang masih aktif.</p>
+
+    <div class="metric-grid">
+      <article class="metric-card">
+        <p class="label">Total Sesi Aktif</p>
+        <p class="value">{summary.activeSessions}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">User Login</p>
+        <p class="value">{new Set(sessions.map((session) => session.username)).size}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Event Tercatat</p>
+        <p class="value">{summary.totalEvents}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Total CMS</p>
+        <p class="value">{summary.totalCmsPages}</p>
+      </article>
+    </div>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Admin</th>
+            <th>IP</th>
+            <th>User Agent</th>
+            <th>Last Seen</th>
+            <th>Expires</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sessions.length === 0 ? (
+            <tr>
+              <td colspan="5" class="muted">Tidak ada sesi aktif.</td>
+            </tr>
+          ) : (
+            sessions.map((session) => (
+              <tr>
+                <td>
+                  <strong>{session.username}</strong>
+                  <div class="muted">{session.role}</div>
+                </td>
+                <td>{session.ip_address}</td>
+                <td>{session.user_agent}</td>
+                <td>{formatDateTime(session.last_seen_at)}</td>
+                <td>{formatDateTime(session.expires_at)}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>

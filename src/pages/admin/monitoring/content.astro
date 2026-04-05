@@ -1,0 +1,135 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import {
+  getAllCmsEntries,
+  getAllSettings,
+  getMonitoringSummary,
+} from "@/lib/admin/repository";
+import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { formatDateTime, getJsonPreview } from "@/lib/admin/view-formatters";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+const [settings, cmsEntries, summary] = await Promise.all([
+  getAllSettings(),
+  getAllCmsEntries(),
+  getMonitoringSummary(),
+]);
+
+const publishedEntries = cmsEntries.filter((entry) => entry.is_published === 1);
+const publicSettings = settings.filter((setting) => {
+  return (
+    setting.setting_key.startsWith("site_") ||
+    setting.setting_key.startsWith("public_") ||
+    setting.setting_key === "maintenance_mode" ||
+    setting.setting_key === "analytics_enabled"
+  );
+});
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Monitoring Konten Public"
+  pageDescription="Halaman khusus untuk memantau konten yang live di website public."
+  activePath="/admin/monitoring/content"
+>
+  <section class="section">
+    <h3>Monitoring Konten Web Public</h3>
+    <p class="sub">Konten published + setting yang berdampak langsung ke tampilan public.</p>
+
+    <div class="metric-grid">
+      <article class="metric-card">
+        <p class="label">Konten Published</p>
+        <p class="value">{publishedEntries.length}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Total CMS Pages</p>
+        <p class="value">{summary.totalCmsPages}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Public Settings</p>
+        <p class="value">{publicSettings.length}</p>
+      </article>
+      <article class="metric-card">
+        <p class="label">Total Settings</p>
+        <p class="value">{summary.totalSettings}</p>
+      </article>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <h4>Daftar Konten Published</h4>
+        <p>Payload konten yang saat ini berpotensi tampil di website publik.</p>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Slug</th>
+                <th>Title</th>
+                <th>Preview JSON</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {publishedEntries.length === 0 ? (
+                <tr>
+                  <td colspan="4" class="muted">Belum ada konten published.</td>
+                </tr>
+              ) : (
+                publishedEntries.map((entry) => (
+                  <tr>
+                    <td><code>{entry.slug}</code></td>
+                    <td>{entry.title}</td>
+                    <td>
+                      <pre class="code-preview">{getJsonPreview(entry.content_json)}</pre>
+                    </td>
+                    <td>{formatDateTime(entry.updated_at)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h4>Public Settings Snapshot</h4>
+        <p>Setting yang biasanya dipakai langsung di web public.</p>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Type</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {publicSettings.length === 0 ? (
+                <tr>
+                  <td colspan="3" class="muted">Tidak ada setting public terdeteksi.</td>
+                </tr>
+              ) : (
+                publicSettings.map((setting) => (
+                  <tr>
+                    <td><code>{setting.setting_key}</code></td>
+                    <td>{setting.value_type}</td>
+                    <td>{setting.setting_value}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</AdminShell>
