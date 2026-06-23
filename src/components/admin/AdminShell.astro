@@ -26,39 +26,66 @@ const {
 
 const profileInitial = (currentAdmin.username?.trim()?.charAt(0) || "U").toUpperCase();
 
+const baseUrl = import.meta.env.BASE_URL;
+
 const navItems = [
   {
     group: "Menu Utama",
     items: [
-      { href: "/admin", label: "Dashboard Utama" },
-      { href: "/admin/monitoring/views", label: "Monitoring - Views Per Hari" },
-      { href: "/admin/monitoring/content", label: "Monitoring - Konten Web Public" },
+      { href: `${baseUrl}kall-control-panel`, label: "Dashboard Utama" },
+      { href: `${baseUrl}kall-control-panel/monitoring/views`, label: "Monitoring - Views Per Hari" },
+      { href: `${baseUrl}kall-control-panel/monitoring/content`, label: "Monitoring - Konten Web Public" },
     ],
   },
   {
     group: "Manajemen Konten",
     items: [
-      { href: "/admin/cms", label: "CMS Pages" },
-      { href: "/admin/settings", label: "Website Settings" },
+      { href: `${baseUrl}kall-control-panel/cms`, label: "CMS Pages" },
+      { href: `${baseUrl}kall-control-panel/settings`, label: "Website Settings" },
     ],
   },
   {
     group: "Operasional",
     items: [
-      { href: "/admin/events", label: "Monitoring Events" },
-      { href: "/admin/sessions", label: "Active Sessions" },
+      { href: `${baseUrl}kall-control-panel/events`, label: "Monitoring Events" },
+      { href: `${baseUrl}kall-control-panel/sessions`, label: "Active Sessions" },
     ],
   },
 ];
 ---
 
-<html lang="id">
+<html lang="id" data-base-url={baseUrl}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{pageTitle} - Superadmin</title>
+
+    <script is:inline>
+      (() => {
+        try {
+          const themeKey = "theme-preference";
+          const storedTheme = localStorage.getItem(themeKey);
+          const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+          const theme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : prefersLight ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+
+    <link
+      rel="preload"
+      href="/fonts/montserrat-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
   </head>
   <body>
+    <div class="ambient-orb ambient-orb-one" aria-hidden="true"></div>
+    <div class="ambient-orb ambient-orb-two" aria-hidden="true"></div>
+
     <div class="layout">
       <aside class="sidebar">
         <div class="brand">
@@ -92,7 +119,10 @@ const navItems = [
           </summary>
 
           <div class="profile-dropdown">
-            <form method="post" action="/admin/logout">
+            <button id="theme-toggle" class="theme-toggle-btn" type="button">
+              🌙 Dark Mode
+            </button>
+            <form method="post" action={`${baseUrl}kall-control-panel/logout`}>
               <button class="logout" type="submit">Logout</button>
             </form>
           </div>
@@ -113,5 +143,51 @@ const navItems = [
         <slot />
       </main>
     </div>
+
+    <script>
+      const themeKey = "theme-preference";
+      const root = document.documentElement;
+      const themeToggle = document.getElementById("theme-toggle");
+
+      const getStoredTheme = () => {
+        try {
+          return localStorage.getItem(themeKey);
+        } catch {
+          return null;
+        }
+      };
+
+      const resolveTheme = (): "dark" | "light" => {
+        const storedTheme = getStoredTheme();
+        if (storedTheme === "dark" || storedTheme === "light") {
+          return storedTheme;
+        }
+        return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      };
+
+      const applyTheme = (theme: "dark" | "light") => {
+        root.setAttribute("data-theme", theme);
+        if (themeToggle) {
+          const nextTheme = theme === "dark" ? "light" : "dark";
+          themeToggle.setAttribute("aria-label", `Switch to ${nextTheme} mode`);
+          themeToggle.setAttribute("title", `Switch to ${nextTheme} mode`);
+          themeToggle.innerHTML = theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+        }
+      };
+
+      // Initial apply
+      applyTheme(resolveTheme());
+
+      themeToggle?.addEventListener("click", () => {
+        const currentTheme = root.getAttribute("data-theme") === "light" ? "light" : "dark";
+        const nextTheme = currentTheme === "light" ? "dark" : "light";
+        applyTheme(nextTheme);
+        try {
+          localStorage.setItem(themeKey, nextTheme);
+        } catch {
+          // Ignore private browsing issues
+        }
+      });
+    </script>
   </body>
 </html>

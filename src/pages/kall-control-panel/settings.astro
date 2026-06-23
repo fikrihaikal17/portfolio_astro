@@ -3,7 +3,7 @@ export const prerender = false;
 
 import AdminShell from "@/components/admin/AdminShell.astro";
 import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
-import { formatDateTime } from "@/lib/admin/view-formatters";
+import { formatDateTime, formatSettingKey } from "@/lib/admin/view-formatters";
 import {
   getAllSettings,
   logAdminEvent,
@@ -72,7 +72,7 @@ const settings = await getAllSettings();
   currentAdmin={admin}
   pageTitle="Website Settings"
   pageDescription="Kelola key-value global website lewat URL halaman khusus settings."
-  activePath="/admin/settings"
+  activePath="/kall-control-panel/settings"
   noticeMessage={noticeMessage}
   errorMessage={errorMessage}
 >
@@ -84,21 +84,21 @@ const settings = await getAllSettings();
       <input type="hidden" name="action" value="save-setting" />
       <div class="form-grid">
         <div class="form-group">
-          <label for="setting_key">Setting Key</label>
-          <input id="setting_key" name="setting_key" placeholder="site_title" required />
+          <label for="setting_key">Nama Setting</label>
+          <input id="setting_key" name="setting_key" placeholder="Contoh: site_title" required />
         </div>
         <div class="form-group">
-          <label for="value_type">Value Type</label>
+          <label for="value_type">Tipe Data</label>
           <select id="value_type" name="value_type">
-            <option value="string">string</option>
-            <option value="number">number</option>
-            <option value="boolean">boolean</option>
-            <option value="json">json</option>
+            <option value="string">Teks (string)</option>
+            <option value="number">Angka (number)</option>
+            <option value="boolean">Ya/Tidak (boolean)</option>
+            <option value="json">JSON (objek)</option>
           </select>
         </div>
         <div class="form-group full">
-          <label for="setting_value">Setting Value</label>
-          <textarea id="setting_value" name="setting_value" placeholder='Contoh JSON: {"heroTitle":"Hello"}' required></textarea>
+          <label for="setting_value">Nilai Setting</label>
+          <textarea id="setting_value" name="setting_value" placeholder='Contoh nilai JSON: {"heroTitle":"Hello"}' required></textarea>
         </div>
       </div>
       <div class="actions">
@@ -110,10 +110,10 @@ const settings = await getAllSettings();
       <table>
         <thead>
           <tr>
-            <th>Key</th>
-            <th>Type</th>
+            <th>Nama Setting</th>
             <th>Value</th>
             <th>Updated</th>
+            <th>Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -124,10 +124,23 @@ const settings = await getAllSettings();
           ) : (
             settings.map((setting) => (
               <tr>
-                <td><code>{setting.setting_key}</code></td>
-                <td>{setting.value_type}</td>
+                <td style="font-weight: 600; color: var(--white);">{formatSettingKey(setting.setting_key)}</td>
                 <td>{setting.setting_value}</td>
                 <td>{formatDateTime(setting.updated_at)}</td>
+                <td>
+                  <div class="action-wrap">
+                    <button type="button" class="kebab-btn" aria-label="Aksi">⋮</button>
+                    <div class="kebab-dropdown">
+                      <button
+                        type="button"
+                        class="kebab-item edit-setting-btn"
+                        data-key={setting.setting_key}
+                        data-type={setting.value_type}
+                        data-value={setting.setting_value}
+                      >✏️ Edit</button>
+                    </div>
+                  </div>
+                </td>
               </tr>
             ))
           )}
@@ -136,3 +149,36 @@ const settings = await getAllSettings();
     </div>
   </section>
 </AdminShell>
+
+<script>
+  // Kebab dropdown toggle
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    const trigger = target.closest(".kebab-btn");
+    const wrap = target.closest(".action-wrap");
+    document.querySelectorAll(".action-wrap.open").forEach((el) => {
+      if (el !== wrap) el.classList.remove("open");
+    });
+    if (trigger && wrap) wrap.classList.toggle("open");
+  });
+
+  const editButtons = document.querySelectorAll(".edit-setting-btn");
+  const keyInput = document.getElementById("setting_key") as HTMLInputElement;
+  const typeSelect = document.getElementById("value_type") as HTMLSelectElement;
+  const valueInput = document.getElementById("setting_value") as HTMLTextAreaElement;
+
+  editButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.getAttribute("data-key") ?? "";
+      const type = btn.getAttribute("data-type") ?? "string";
+      const value = btn.getAttribute("data-value") ?? "";
+
+      if (keyInput) keyInput.value = key;
+      if (typeSelect) typeSelect.value = type;
+      if (valueInput) valueInput.value = value;
+
+      btn.closest(".action-wrap")?.classList.remove("open");
+      keyInput?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+</script>

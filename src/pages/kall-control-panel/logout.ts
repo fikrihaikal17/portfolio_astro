@@ -13,7 +13,7 @@ const handleLogout: APIRoute = async ({ cookies, redirect }) => {
   }
 
   cookies.delete(adminCookieName, { path: "/" });
-  return redirect("/admin/login");
+  return redirect(import.meta.env.BASE_URL + "kall-control-panel/login");
 };
 
 export const GET = handleLogout;

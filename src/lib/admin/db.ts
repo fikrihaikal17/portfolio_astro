@@ -36,6 +36,14 @@ export const getPool = (): Pool => {
     timezone: "Z",
   });
 
+  pool.on("connection", (connection) => {
+    (connection as any).query("SET time_zone = '+00:00'", (err: any) => {
+      if (err) {
+        console.error("Failed to set pool connection time_zone to UTC:", err);
+      }
+    });
+  });
+
   return pool;
 };
 

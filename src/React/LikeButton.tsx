@@ -26,11 +26,7 @@ const LikeButton = () => {
     const unsubscribe = onSnapshot(likeDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const currentLikes = docSnap.data().likes;
-        // Only update if the server value is different (prevents overwrite during optimistic update)
-        setLikes((prev) => {
-          const newLikes = Math.max(0, currentLikes);
-          return newLikes;
-        });
+        setLikes(Math.max(0, currentLikes));
       }
     });
 

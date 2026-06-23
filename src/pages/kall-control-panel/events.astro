@@ -3,7 +3,7 @@ export const prerender = false;
 
 import AdminShell from "@/components/admin/AdminShell.astro";
 import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
-import { formatDateTime } from "@/lib/admin/view-formatters";
+import { formatDateTime, formatEventType } from "@/lib/admin/view-formatters";
 import {
   getRecentMonitoringEvents,
   logAdminEvent,
@@ -59,7 +59,7 @@ const events = await getRecentMonitoringEvents(40);
   currentAdmin={admin}
   pageTitle="Monitoring Events"
   pageDescription="Catatan aktivitas operasional admin pada halaman URL khusus events."
-  activePath="/admin/events"
+  activePath="/kall-control-panel/events"
   noticeMessage={noticeMessage}
   errorMessage={errorMessage}
 >
@@ -97,7 +97,7 @@ const events = await getRecentMonitoringEvents(40);
             events.map((event) => (
               <tr>
                 <td>{formatDateTime(event.created_at)}</td>
-                <td>{event.event_type}</td>
+                <td>{formatEventType(event.event_type)}</td>
                 <td>{event.level}</td>
                 <td>{event.message}</td>
               </tr>

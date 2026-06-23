@@ -166,6 +166,7 @@ export const getDailyPublicViews = async (
         COUNT(*) AS total_views
       FROM monitoring_events
       WHERE created_at >= ?
+        AND event_type != 'public_heartbeat'
         AND (
           event_type IN ('public_page_view', 'page_view', 'public_view')
           OR source IN ('public-web', 'public-site', 'website')
@@ -217,3 +218,34 @@ export const getMonitoringSummary = async (): Promise<{
     activeSessions: sessionCount?.total ?? 0,
   };
 };
+
+export interface HourlyPublicView extends RowDataPacket {
+  view_hour: string;
+  total_views: number;
+}
+
+export const getHourlyPublicViews = async (
+  hours = 24
+): Promise<HourlyPublicView[]> => {
+  const windowHours = Number.isFinite(hours) && hours > 0 ? Math.floor(hours) : 24;
+  const cutoff = new Date(Date.now() - windowHours * 60 * 60 * 1000);
+
+  return queryRows<HourlyPublicView[]>(
+    `
+      SELECT
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:00') AS view_hour,
+        COUNT(*) AS total_views
+      FROM monitoring_events
+      WHERE created_at >= ?
+        AND event_type != 'public_heartbeat'
+        AND (
+          event_type IN ('public_page_view', 'page_view', 'public_view')
+          OR source IN ('public-web', 'public-site', 'website')
+        )
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d %H:00')
+      ORDER BY view_hour ASC
+    `,
+    [cutoff]
+  );
+};
+

@@ -1,0 +1,634 @@
+---
+export const prerender = false;
+
+import Layout from "@/layouts/Layout.astro";
+import {
+  adminCookieName,
+  createAdminSession,
+  getAdminBySessionToken,
+  revokeExpiredSessions,
+  verifyAdminCredentials,
+} from "@/lib/admin/auth";
+import { logAdminEvent } from "@/lib/admin/repository";
+
+let errorMessage = "";
+
+const existingToken = Astro.cookies.get(adminCookieName)?.value;
+if (existingToken) {
+  const existingUser = await getAdminBySessionToken(existingToken);
+  if (existingUser) {
+    return Astro.redirect(import.meta.env.BASE_URL + "kall-control-panel");
+  }
+  Astro.cookies.delete(adminCookieName, { path: "/" });
+}
+
+await revokeExpiredSessions();
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const username = String(formData.get("username") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+
+  if (!username || !password) {
+    errorMessage = "Username dan password wajib diisi.";
+  } else {
+    const adminUser = await verifyAdminCredentials(username, password);
+
+    if (!adminUser) {
+      errorMessage = "Login gagal. Periksa username/password.";
+      await logAdminEvent(
+        "admin_login_failed",
+        "admin-login",
+        `Failed login attempt for username: ${username}`,
+        "warning"
+      );
+    } else {
+      const { token, expiresAt } = await createAdminSession(adminUser.id, Astro.request);
+      const isHttps = new URL(Astro.request.url).protocol === "https:";
+
+      Astro.cookies.set(adminCookieName, token, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: isHttps,
+        expires: expiresAt,
+      });
+
+      await logAdminEvent(
+        "admin_login_success",
+        "admin-login",
+        `Superadmin ${adminUser.username} logged in`,
+        "info",
+        { username: adminUser.username },
+        adminUser.id
+      );
+
+      return Astro.redirect(import.meta.env.BASE_URL + "kall-control-panel");
+    }
+  }
+}
+---
+
+<Layout title="Superadmin Login" showLoader={false}>
+  <div class="mode-controls" data-theme-animate data-intro>
+    <button
+      id="theme-toggle"
+      type="button"
+      class="theme-toggle"
+      aria-label="Switch theme"
+      title="Switch theme"
+    >
+      <span class="theme-icon theme-icon-sun" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="19"
+          height="19"
+          fill="currentColor"
+        >
+          <path d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM20 11H23V13H20V11ZM1 11H4V13H1V11ZM18.364 7.05025L16.9497 5.63604L19.0711 3.51472L20.4853 4.92893L18.364 7.05025ZM5.63604 18.364L7.05025 16.9497L4.92893 14.8284L3.51472 16.2426L5.63604 18.364Z" />
+        </svg>
+      </span>
+      <span class="theme-icon theme-icon-moon" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="19"
+          height="19"
+          fill="currentColor"
+        >
+          <path d="M10 7C10 11.9706 14.0294 16 19 16C19.5635 16 20.115 15.9482 20.65 15.8494C19.6783 19.3854 16.444 22 12.6 22C7.85035 22 4 18.1496 4 13.4C4 9.55602 6.61463 6.32172 10.1506 5.34999C10.0518 5.88496 10 6.43652 10 7Z" />
+        </svg>
+      </span>
+    </button>
+  </div>
+
+  <div class="login-wrapper">
+    <main class="login-card" data-scroll-reveal>
+      <div class="card-glow"></div>
+      
+      <div class="logo-container">
+        <div class="logo-emblem">
+          <span class="logo-emblem-core"></span>
+          <span class="logo-emblem-ring"></span>
+        </div>
+      </div>
+      
+      <h2>Superadmin Panel</h2>
+      <p class="description">Masuk untuk mengelola CMS, setting website, dan monitoring operasional.</p>
+
+      {errorMessage && (
+        <div class="error-container">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      <form method="post" autocomplete="off">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-wrapper">
+            <input 
+              id="username" 
+              name="username" 
+              type="text" 
+              autocomplete="off" 
+              placeholder="Masukkan username"
+              required 
+            />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input 
+              id="password" 
+              name="password" 
+              type="password" 
+              autocomplete="new-password" 
+              placeholder="Masukkan password"
+              required 
+            />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <button type="button" id="toggle-password" class="toggle-password" aria-label="Tampilkan password">
+              <!-- Eye Icon -->
+              <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <!-- Eye Off Icon -->
+              <svg class="eye-off-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="login-btn">
+          <span>Masuk ke Dashboard</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
+      </form>
+
+      <div style="text-align: center;">
+        <a href="/" class="back-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span>Kembali ke Beranda</span>
+        </a>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<style is:global>
+  html, body {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .mode-controls {
+    position: fixed;
+    top: 1.875rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    padding: 0.24rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--background) 72%, transparent);
+    backdrop-filter: blur(12px);
+    z-index: 130;
+  }
+
+  .mode-controls .theme-toggle {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    backdrop-filter: none;
+    transform: none;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+    width: 2.05rem;
+    height: 2.05rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white-icon);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .mode-controls .theme-toggle:hover {
+    transform: none;
+    box-shadow: none;
+    color: var(--white);
+  }
+
+
+  .login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  
+  .login-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: color-mix(in srgb, var(--component-bg) 85%, transparent);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    padding: 2.5rem 2.2rem 2.2rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 
+      0 30px 60px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transition: 
+      transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+      box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+      border-color 0.3s ease;
+    box-sizing: border-box;
+  }
+  
+  .login-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--sec) 40%, var(--border-subtle) 60%);
+    box-shadow: 
+      0 40px 80px rgba(0, 0, 0, 0.35),
+      0 0 40px color-mix(in srgb, var(--sec) 15%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .card-glow {
+    position: absolute;
+    top: 0;
+    left: 25%;
+    width: 50%;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, var(--sec), var(--pink), transparent);
+    box-shadow: 0 0 12px 1px var(--sec);
+    filter: blur(0.5px);
+    opacity: 0.8;
+    pointer-events: none;
+  }
+
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.2rem;
+  }
+
+  .logo-emblem {
+    position: relative;
+    width: 3.8rem;
+    height: 3.8rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .logo-emblem-core {
+    width: 1.3rem;
+    height: 1.3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sec), var(--pink));
+    box-shadow: 
+      0 0 20px var(--sec),
+      0 0 40px var(--pink);
+    animation: core-pulse 2s infinite ease-in-out;
+  }
+
+  .logo-emblem-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px dashed color-mix(in srgb, var(--sec) 40%, var(--border-subtle) 60%);
+    border-top-color: var(--sec);
+    border-bottom-color: var(--pink);
+    animation: spin 12s linear infinite;
+  }
+
+  @keyframes core-pulse {
+    0%, 100% { 
+      transform: scale(1); 
+      filter: brightness(1); 
+    }
+    50% { 
+      transform: scale(1.16); 
+      filter: brightness(1.25); 
+      box-shadow: 
+        0 0 25px var(--sec),
+        0 0 50px var(--pink);
+    }
+  }
+
+  @keyframes spin {
+    to { 
+      transform: rotate(360deg); 
+    }
+  }
+
+  .login-card h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-align: center;
+    background: linear-gradient(135deg, var(--white) 30%, var(--white-icon) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.025em;
+  }
+  
+  .login-card .description {
+    font-size: 0.85rem;
+    color: var(--white-icon);
+    text-align: center;
+    margin-bottom: 1.8rem;
+    line-height: 1.4;
+  }
+  
+  .form-group {
+    position: relative;
+    margin-bottom: 1.2rem;
+  }
+  
+  .form-group label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--white-icon);
+    margin-bottom: 0.5rem;
+    transition: color 0.3s ease;
+  }
+
+  .form-group:focus-within label {
+    color: var(--sec);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--sec) 25%, transparent);
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-wrapper > svg {
+    position: absolute;
+    left: 16px;
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--white-icon);
+    pointer-events: none;
+    transition: color 0.3s ease, transform 0.3s ease;
+  }
+
+  .form-group input {
+    width: 100%;
+    background: color-mix(in srgb, var(--background) 75%, black 25%);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 13.5px 46px 13.5px 46px;
+    font-size: 0.95rem;
+    color: var(--white);
+    outline: none;
+    transition: 
+      border-color 0.3s ease, 
+      box-shadow 0.3s ease, 
+      background-color 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  :root[data-theme="light"] .form-group input {
+    background: color-mix(in srgb, var(--background) 95%, black 5%);
+  }
+  
+  .form-group input::placeholder {
+    color: color-mix(in srgb, var(--white-icon) 45%, transparent);
+  }
+  
+  .form-group input:focus {
+    border-color: var(--sec);
+    background: color-mix(in srgb, var(--background) 60%, black 40%);
+    box-shadow: 
+      0 0 0 1px var(--sec),
+      0 0 20px color-mix(in srgb, var(--sec) 15%, transparent);
+  }
+
+  :root[data-theme="light"] .form-group input:focus {
+    background: #ffffff;
+  }
+  
+  .form-group input:focus ~ svg {
+    color: var(--sec);
+    transform: scale(1.05);
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 16px;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: var(--white-icon);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    z-index: 5;
+  }
+
+  .toggle-password:hover {
+    color: var(--sec);
+  }
+
+  .toggle-password svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    color: inherit !important;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+  
+  .login-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--sec), var(--pink));
+    border: none;
+    border-radius: 14px;
+    padding: 13.5px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 
+      0 4px 20px color-mix(in srgb, var(--sec) 30%, transparent),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    transition: 
+      transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+      box-shadow 0.3s ease, 
+      filter 0.2s ease;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .login-btn:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 
+      0 10px 30px color-mix(in srgb, var(--sec) 45%, transparent),
+      0 0 20px color-mix(in srgb, var(--pink) 35%, transparent),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  }
+
+  .login-btn:active {
+    transform: translateY(-1px) scale(0.99);
+  }
+
+  .login-btn svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .login-btn:hover svg {
+    transform: translateX(4px);
+  }
+
+  .error-container {
+    background: rgba(255, 81, 112, 0.1);
+    border: 1px solid rgba(255, 81, 112, 0.25);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-bottom: 1.2rem;
+    color: #ff657e;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: shake 0.4s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .error-container svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .hint-container {
+    margin-top: 1.6rem;
+    text-align: center;
+    font-size: 0.76rem;
+    color: var(--white-icon);
+  }
+  
+  .hint-container code {
+    background: var(--white-icon-tr);
+    padding: 3px 7px;
+    border-radius: 6px;
+    color: var(--white);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--white-icon);
+    text-decoration: none;
+    margin-top: 1.4rem;
+    transition: color 0.2s ease;
+  }
+
+  .back-link:hover {
+    color: var(--sec);
+  }
+
+  .back-link svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    transition: transform 0.2s ease;
+  }
+
+  .back-link:hover svg {
+    transform: translateX(-4px);
+  }
+
+  @media (max-width: 480px) {
+    .login-card {
+      padding: 2.2rem 1.4rem 1.8rem;
+      border-radius: 20px;
+    }
+    .login-card h2 {
+      font-size: 1.4rem;
+    }
+  }
+</style>
+
+<script>
+  const toggleBtn = document.getElementById("toggle-password");
+  const passwordInput = document.getElementById("password") as HTMLInputElement;
+
+  if (toggleBtn && passwordInput) {
+    const eyeIcon = toggleBtn.querySelector(".eye-icon");
+    const eyeOffIcon = toggleBtn.querySelector(".eye-off-icon");
+
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+
+      if (isPassword) {
+        eyeIcon?.classList.add("hidden");
+        eyeOffIcon?.classList.remove("hidden");
+        toggleBtn.setAttribute("aria-label", "Sembunyikan password");
+      } else {
+        eyeIcon?.classList.remove("hidden");
+        eyeOffIcon?.classList.add("hidden");
+        toggleBtn.setAttribute("aria-label", "Tampilkan password");
+      }
+    });
+  }
+</script>
+
+

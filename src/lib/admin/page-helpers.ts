@@ -8,7 +8,7 @@ export const ensureAdminOrRedirect = async (
   if (!sessionToken) {
     return {
       currentAdmin: null,
-      response: Astro.redirect("/admin/login"),
+      response: Astro.redirect(import.meta.env.BASE_URL + "kall-control-panel/login"),
     };
   }
 
@@ -17,7 +17,7 @@ export const ensureAdminOrRedirect = async (
     Astro.cookies.delete(adminCookieName, { path: "/" });
     return {
       currentAdmin: null,
-      response: Astro.redirect("/admin/login"),
+      response: Astro.redirect(import.meta.env.BASE_URL + "kall-control-panel/login"),
     };
   }
 

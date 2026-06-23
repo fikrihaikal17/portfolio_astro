@@ -84,6 +84,8 @@
   const form = document.getElementById("contact-form");
   const formMessage = document.getElementById("form-message");
 
+  if (!form || !formMessage) return;
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
@@ -98,6 +100,7 @@
         form.reset();
         form.style.display = "none";
         formMessage.classList.remove("hidden");
+        formMessage.classList.add("flex");
       } else {
         const data = await response.json();
         console.error("Error response:", data);

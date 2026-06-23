@@ -1,0 +1,265 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { formatDateTime, formatSettingKey } from "@/lib/admin/view-formatters";
+import {
+  deleteCmsEntry,
+  getAllCmsEntries,
+  logAdminEvent,
+  upsertCmsEntry,
+} from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    if (action === "save-cms") {
+      const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
+      const title = String(formData.get("title") ?? "").trim();
+      const contentJson = String(formData.get("content_json") ?? "").trim();
+      const isPublished = formData.get("is_published") === "on";
+
+      if (!slug || !title) {
+        throw new Error("Slug dan title CMS wajib diisi.");
+      }
+
+      JSON.parse(contentJson || "{}");
+
+      await upsertCmsEntry(slug, title, contentJson, isPublished, admin.id);
+      await logAdminEvent(
+        "cms_saved",
+        "admin-cms",
+        `CMS ${slug} disimpan oleh ${admin.username}`,
+        "info",
+        { slug, isPublished },
+        admin.id
+      );
+      noticeMessage = "CMS entry berhasil disimpan.";
+    } else if (action === "delete-cms") {
+      const cmsId = Number(formData.get("cms_id") ?? "0");
+      if (!Number.isFinite(cmsId) || cmsId <= 0) {
+        throw new Error("ID CMS tidak valid.");
+      }
+
+      await deleteCmsEntry(cmsId);
+      await logAdminEvent(
+        "cms_deleted",
+        "admin-cms",
+        `CMS ID ${cmsId} dihapus oleh ${admin.username}`,
+        "warning",
+        { cmsId },
+        admin.id
+      );
+      noticeMessage = "CMS entry berhasil dihapus.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-cms",
+      `Aksi CMS gagal: ${errorMessage}`,
+      "error",
+      { action },
+      admin.id
+    );
+  }
+}
+
+const cmsEntries = await getAllCmsEntries();
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="CMS Pages"
+  pageDescription="Kelola konten CMS di halaman URL terpisah untuk workflow yang lebih jelas."
+  activePath="/kall-control-panel/cms"
+  noticeMessage={noticeMessage}
+  errorMessage={errorMessage}
+>
+  <section class="section">
+    <h3>CMS Pages (MySQL)</h3>
+    <p class="sub">Kelola konten CMS section website lewat payload JSON.</p>
+
+    <form method="post" id="cms-form">
+      <input type="hidden" name="action" value="save-cms" />
+      <textarea id="content_json" name="content_json" style="display:none;"></textarea>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="slug">Identifikasi Halaman (Slug)</label>
+          <input id="slug" name="slug" placeholder="Contoh: home-hero" required />
+        </div>
+        <div class="form-group">
+          <label for="title">Judul Halaman</label>
+          <input id="title" name="title" placeholder="Contoh: Homepage Hero Content" required />
+        </div>
+        <div class="form-group full">
+          <label>Isi Konten</label>
+          <div id="cms-fields-container" style="display: grid; gap: 8px; margin-top: 4px;"></div>
+          <button
+            type="button"
+            id="cms-add-field"
+            style="margin-top: 8px; background: color-mix(in srgb, var(--sec) 15%, transparent); border: 1px dashed var(--sec); color: var(--sec); font-size: 12px; padding: 8px 14px; border-radius: 8px; cursor: pointer;"
+          >
+            + Tambah Field
+          </button>
+        </div>
+        <div class="form-group full" style="flex-direction: row; align-items: center;">
+          <input id="is_published" name="is_published" type="checkbox" checked style="width:auto; margin:0;" />
+          <label for="is_published" style="margin:0;">Publikasikan halaman ini</label>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit">Simpan CMS Entry</button>
+      </div>
+    </form>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Bagian (Section)</th>
+            <th>Judul</th>
+            <th>Status</th>
+            <th>Diperbarui</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cmsEntries.length === 0 ? (
+            <tr>
+              <td colspan="5" class="muted">Belum ada CMS page tersimpan.</td>
+            </tr>
+          ) : (
+            cmsEntries.map((entry) => (
+              <tr>
+                <td style="font-weight: 600; color: var(--white);">{formatSettingKey(entry.slug)}</td>
+                <td>{entry.title}</td>
+                <td>
+                  <span class="badge">{entry.is_published === 1 ? "Published" : "Draft"}</span>
+                </td>
+                <td>{formatDateTime(entry.updated_at)}</td>
+                <td><div style="display: flex; gap: 8px; align-items: center;">
+                  <div class="action-wrap">
+                    <button type="button" class="kebab-btn" aria-label="Aksi">⋮</button>
+                    <div class="kebab-dropdown">
+                      <button
+                        type="button"
+                        class="kebab-item edit-cms-btn"
+                        data-slug={entry.slug}
+                        data-title={entry.title}
+                        data-content={entry.content_json}
+                        data-published={entry.is_published}
+                      >✏️ Edit</button>
+                      <form method="post" onsubmit="return confirm('Hapus CMS entry ini?');" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete-cms" />
+                        <input type="hidden" name="cms_id" value={entry.id} />
+                        <button class="kebab-item danger-item" type="submit">🗑️ Hapus</button>
+                      </form>
+                    </div>
+                  </div>
+                </div></td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>
+
+<script>
+  // Kebab dropdown toggle
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    const trigger = target.closest(".kebab-btn");
+    const wrap = target.closest(".action-wrap");
+    document.querySelectorAll(".action-wrap.open").forEach((el) => {
+      if (el !== wrap) el.classList.remove("open");
+    });
+    if (trigger && wrap) wrap.classList.toggle("open");
+  });
+
+  function cmsAddField(key = "", value = "") {
+    const container = document.getElementById("cms-fields-container");
+    if (!container) return;
+    const row = document.createElement("div");
+    row.style.cssText = "display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;";
+    row.innerHTML = `
+      <input type="text" placeholder="Nama field (contoh: headline)" value="${key.replace(/"/g, '&quot;')}" class="cms-field-key" style="border-radius: 10px; border: 1px solid var(--border-subtle); background: color-mix(in srgb, var(--background) 70%, transparent); color: var(--white); padding: 10px 12px; font: inherit; font-size: 13px; outline: none;" />
+      <input type="text" placeholder="Nilai" value="${value.replace(/"/g, '&quot;')}" class="cms-field-val" style="border-radius: 10px; border: 1px solid var(--border-subtle); background: color-mix(in srgb, var(--background) 70%, transparent); color: var(--white); padding: 10px 12px; font: inherit; font-size: 13px; outline: none;" />
+      <button type="button" title="Hapus field" style="background: rgba(255,89,123,0.15); border: 1px solid rgba(255,89,123,0.4); color: #ff788a; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 13px; line-height: 1;">✕</button>
+    `;
+    row.querySelector("button")!.addEventListener("click", () => row.remove());
+    container.appendChild(row);
+  }
+
+  cmsAddField();
+  cmsAddField();
+
+  document.getElementById("cms-add-field")?.addEventListener("click", () => cmsAddField());
+
+  document.getElementById("cms-form")?.addEventListener("submit", (e) => {
+    const keys = document.querySelectorAll(".cms-field-key") as NodeListOf<HTMLInputElement>;
+    const vals = document.querySelectorAll(".cms-field-val") as NodeListOf<HTMLInputElement>;
+    const obj: Record<string, string> = {};
+    keys.forEach((k, i) => {
+      const key = k.value.trim();
+      if (key) obj[key] = vals[i]?.value ?? "";
+    });
+    const hidden = document.getElementById("content_json") as HTMLTextAreaElement;
+    if (hidden) hidden.value = JSON.stringify(obj);
+    if (Object.keys(obj).length === 0) {
+      e.preventDefault();
+      alert("Tambahkan minimal satu field konten.");
+    }
+  });
+
+  const editButtons = document.querySelectorAll(".edit-cms-btn");
+  const slugInput = document.getElementById("slug") as HTMLInputElement;
+  const titleInput = document.getElementById("title") as HTMLInputElement;
+  const publishedCheckbox = document.getElementById("is_published") as HTMLInputElement;
+
+  editButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const slug = btn.getAttribute("data-slug") ?? "";
+      const title = btn.getAttribute("data-title") ?? "";
+      const content = btn.getAttribute("data-content") ?? "{}";
+      const published = btn.getAttribute("data-published") === "1";
+
+      if (slugInput) slugInput.value = slug;
+      if (titleInput) titleInput.value = title;
+      if (publishedCheckbox) publishedCheckbox.checked = published;
+
+      const container = document.getElementById("cms-fields-container");
+      if (container) {
+        container.innerHTML = "";
+        try {
+          const parsed = JSON.parse(content);
+          const entries = Object.entries(parsed);
+          if (entries.length === 0) {
+            cmsAddField(); cmsAddField();
+          } else {
+            entries.forEach(([k, v]) => cmsAddField(k, String(v)));
+          }
+        } catch {
+          cmsAddField(); cmsAddField();
+        }
+      }
+
+      btn.closest(".action-wrap")?.classList.remove("open");
+      slugInput?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+</script>

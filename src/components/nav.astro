@@ -451,16 +451,6 @@ const navItems: NavItem[] = [
 
   window.addEventListener("scroll", handleActiveUpdate, { passive: true });
 
-  document.addEventListener("scroll", handleActiveUpdate, {
-    passive: true,
-    capture: true,
-  });
-
-  const scrollingElement = document.scrollingElement;
-  scrollingElement?.addEventListener("scroll", handleActiveUpdate, {
-    passive: true,
-  });
-
   window.addEventListener(
     "resize",
     () => {
@@ -484,30 +474,6 @@ const navItems: NavItem[] = [
   requestAnimationFrame(() => {
     resolveActiveByScroll();
   });
-
-  const navRuntime = window as Window & {
-    __navActivePollId?: number;
-  };
-
-  if (navRuntime.__navActivePollId) {
-    window.clearInterval(navRuntime.__navActivePollId);
-  }
-
-  navRuntime.__navActivePollId = window.setInterval(() => {
-    resolveActiveByScroll();
-  }, 180);
-
-  let lastScrollY = window.scrollY;
-
-  const watchScrollPosition = () => {
-    if (window.scrollY !== lastScrollY) {
-      lastScrollY = window.scrollY;
-      resolveActiveByScroll();
-    }
-    requestAnimationFrame(watchScrollPosition);
-  };
-
-  requestAnimationFrame(watchScrollPosition);
 </script>
 
 <style>

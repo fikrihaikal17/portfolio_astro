@@ -8,7 +8,7 @@ import {
   getMonitoringSummary,
 } from "@/lib/admin/repository";
 import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
-import { formatDateTime, getJsonPreview } from "@/lib/admin/view-formatters";
+import { formatDateTime, formatSettingKey, renderCmsPreview } from "@/lib/admin/view-formatters";
 
 const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
 if (response) {
@@ -37,7 +37,7 @@ const publicSettings = settings.filter((setting) => {
   currentAdmin={admin}
   pageTitle="Monitoring Konten Public"
   pageDescription="Halaman khusus untuk memantau konten yang live di website public."
-  activePath="/admin/monitoring/content"
+  activePath="/kall-control-panel/monitoring/content"
 >
   <section class="section">
     <h3>Monitoring Konten Web Public</h3>
@@ -71,9 +71,9 @@ const publicSettings = settings.filter((setting) => {
           <table>
             <thead>
               <tr>
-                <th>Slug</th>
+                <th>Bagian (Section)</th>
                 <th>Title</th>
-                <th>Preview JSON</th>
+                <th>Konten Preview</th>
                 <th>Updated</th>
               </tr>
             </thead>
@@ -85,10 +85,10 @@ const publicSettings = settings.filter((setting) => {
               ) : (
                 publishedEntries.map((entry) => (
                   <tr>
-                    <td><code>{entry.slug}</code></td>
+                    <td style="font-weight: 600; color: var(--white);">{formatSettingKey(entry.slug)}</td>
                     <td>{entry.title}</td>
-                    <td>
-                      <pre class="code-preview">{getJsonPreview(entry.content_json)}</pre>
+                    <td style="white-space: pre-line; font-size: 13px; line-height: 1.5; color: var(--white-icon);">
+                      {renderCmsPreview(entry.content_json)}
                     </td>
                     <td>{formatDateTime(entry.updated_at)}</td>
                   </tr>
@@ -107,21 +107,19 @@ const publicSettings = settings.filter((setting) => {
           <table>
             <thead>
               <tr>
-                <th>Key</th>
-                <th>Type</th>
+                <th>Nama Setting</th>
                 <th>Value</th>
               </tr>
             </thead>
             <tbody>
               {publicSettings.length === 0 ? (
                 <tr>
-                  <td colspan="3" class="muted">Tidak ada setting public terdeteksi.</td>
+                  <td colspan="2" class="muted">Tidak ada setting public terdeteksi.</td>
                 </tr>
               ) : (
                 publicSettings.map((setting) => (
                   <tr>
-                    <td><code>{setting.setting_key}</code></td>
-                    <td>{setting.value_type}</td>
+                    <td style="font-weight: 600; color: var(--white);">{formatSettingKey(setting.setting_key)}</td>
                     <td>{setting.setting_value}</td>
                   </tr>
                 ))

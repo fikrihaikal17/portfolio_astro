@@ -4,9 +4,10 @@ import PublicChatbot from "@/components/PublicChatbot.astro";
 
 interface Props {
   title: string;
+  showLoader?: boolean;
 }
 
-const { title } = Astro.props;
+const { title, showLoader = true } = Astro.props;
 const siteUrl = "https://portfolio.kall.my.id";
 const pageTitle = `${title} | Software Engineer`;
 const pageDescription =
@@ -15,7 +16,7 @@ const ogImage = `${siteUrl}/og.image.v2.png`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-base-url={import.meta.env.BASE_URL}>
   <head>
     <meta charset="UTF-8" />
     <title>{pageTitle}</title>
@@ -148,20 +149,22 @@ const ogImage = `${siteUrl}/og.image.v2.png`;
     </script>
   </head>
   <body class="bg-[--background] sm:px-28 lg:px-20 px-9 transition-colors duration-500">
-    <div id="page-loader" class="page-loader" aria-live="polite" aria-label="Loading page">
-      <div id="page-loader-popup" class="page-loader-popup">
-        <div id="page-loader-emblem" class="page-loader-emblem" aria-hidden="true">
-          <span id="page-loader-emblem-core" class="page-loader-emblem-core"></span>
-          <span id="page-loader-emblem-ring" class="page-loader-emblem-ring"></span>
-        </div>
-        <p id="page-loader-title" class="page-loader-title">Muhammad Fikri Haikal</p>
-        <p id="page-loader-label" class="page-loader-label">Loading experience...</p>
-        <p id="page-loader-subline" class="page-loader-subline">Preparing a seamless interface...</p>
-        <div class="page-loader-track" aria-hidden="true">
-          <span id="page-loader-bar" class="page-loader-bar"></span>
+    {showLoader && (
+      <div id="page-loader" class="page-loader" aria-live="polite" aria-label="Loading page">
+        <div id="page-loader-popup" class="page-loader-popup">
+          <div id="page-loader-emblem" class="page-loader-emblem" aria-hidden="true">
+            <span id="page-loader-emblem-core" class="page-loader-emblem-core"></span>
+            <span id="page-loader-emblem-ring" class="page-loader-emblem-ring"></span>
+          </div>
+          <p id="page-loader-title" class="page-loader-title">Muhammad Fikri Haikal</p>
+          <p id="page-loader-label" class="page-loader-label">Loading experience...</p>
+          <p id="page-loader-subline" class="page-loader-subline">Preparing a seamless interface...</p>
+          <div class="page-loader-track" aria-hidden="true">
+            <span id="page-loader-bar" class="page-loader-bar"></span>
+          </div>
         </div>
       </div>
-    </div>
+    )}
     <div
       class="ambient-orb ambient-orb-one"
       aria-hidden="true"
@@ -205,6 +208,23 @@ const ogImage = `${siteUrl}/og.image.v2.png`;
       const reducedMotionQuery = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       );
+
+      // Track visitor page view & heartbeat
+      try {
+        const baseUrl = document.documentElement.getAttribute("data-base-url") || "/";
+        
+        // Initial page view track
+        fetch(`${baseUrl}api/track-view`, { method: "POST" }).catch(() => {});
+        
+        // Periodic heartbeat to track active online status
+        setInterval(() => {
+          if (document.visibilityState === "visible") {
+            fetch(`${baseUrl}api/track-view?heartbeat=true`, { method: "POST" }).catch(() => {});
+          }
+        }, 25000);
+      } catch (e) {
+        // Ignore analytics tracking errors
+      }
       const cursorRing = document.getElementById("custom-cursor-ring");
       const cursorCore = document.getElementById("custom-cursor-core");
       const staggerNodes = Array.from(

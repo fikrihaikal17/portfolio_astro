@@ -87,12 +87,12 @@ CREATE TABLE IF NOT EXISTS monitoring_events (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Seed default superadmin:
--- username: superadmin
--- password: ChangeMe123!
+-- username: fikrihaikal17
+-- password: 386776Haikal
 INSERT INTO admin_users (username, password_hash, role, is_active)
 VALUES (
-  'superadmin',
-  '$2b$12$o8srQnsW9flhKxXlNnBxROMkRo.GkT84IptgH4BVbJtJAWRt/G7vG',
+  'fikrihaikal17',
+  '$2b$12$aOwaDCSaKE9QlctTkSgLLeSKVlBR/8Tu8esNgsk/298h3r3G/YuZO',
   'superadmin',
   1
 )
