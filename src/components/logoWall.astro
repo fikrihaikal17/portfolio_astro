@@ -1,5 +1,7 @@
 ---
-const technologies = [
+import { getAllSkills } from "@/lib/admin/repository";
+
+const fallbackTechnologies = [
   { slug: "laravel", label: "Laravel" },
   { slug: "Php_dark", label: "PHP" },
   { slug: "react", label: "React" },
@@ -17,6 +19,31 @@ const technologies = [
   { slug: "CSS3", label: "CSS3" },
   { slug: "astro", label: "Astro" },
 ];
+
+let technologies: Array<{ slug: string; label: string; image_url: string }> = [];
+try {
+  const dbSkills = await getAllSkills();
+  if (dbSkills && dbSkills.length > 0) {
+    technologies = dbSkills.map(s => ({
+      slug: s.slug,
+      label: s.label,
+      image_url: s.image_url
+    }));
+  } else {
+    technologies = fallbackTechnologies.map(t => ({
+      slug: t.slug,
+      label: t.label,
+      image_url: `/svg/${t.slug}.svg`
+    }));
+  }
+} catch (e) {
+  console.error("Failed to load skills from database:", e);
+  technologies = fallbackTechnologies.map(t => ({
+    slug: t.slug,
+    label: t.label,
+    image_url: `/svg/${t.slug}.svg`
+  }));
+}
 ---
 
 <div id="expertise" class="skills-marquee relative overflow-x-hidden mt-1 md:mt-2 py-10 md:py-12 scroll-mt-36">
@@ -31,7 +58,7 @@ const technologies = [
           aria-hidden={index >= technologies.length ? "true" : "false"}
         >
           <img
-            src={`/svg/${tech.slug}.svg`}
+            src={tech.image_url}
             alt={tech.label}
             class="skill-logo h-7 w-auto object-contain"
             width="30"

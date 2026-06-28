@@ -249,3 +249,225 @@ export const getHourlyPublicViews = async (
   );
 };
 
+export interface ProjectRow extends RowDataPacket {
+  id: number;
+  title: string;
+  link: string;
+  preview: string;
+  status_key: string;
+  status_text: string;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CertificateRow extends RowDataPacket {
+  id: number;
+  provider: string;
+  year: string;
+  title: string;
+  issuer: string;
+  credential_id: string;
+  verification_url: string;
+  preview_pdf: string;
+  tags: string;
+  score: string | null;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TranslationRow extends RowDataPacket {
+  id: number;
+  translation_key: string;
+  en: string;
+  id_text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Projects
+export const getAllProjects = async (): Promise<ProjectRow[]> => {
+  return queryRows<ProjectRow[]>(
+    `SELECT id, title, link, preview, status_key, status_text, order_index, created_at, updated_at
+     FROM portfolio_projects
+     ORDER BY order_index ASC`
+  );
+};
+
+export const upsertProject = async (
+  id: number | null,
+  title: string,
+  link: string,
+  preview: string,
+  statusKey: string,
+  statusText: string,
+  orderIndex = 0
+): Promise<void> => {
+  if (id && id > 0) {
+    await executeQuery(
+      `UPDATE portfolio_projects
+       SET title = ?, link = ?, preview = ?, status_key = ?, status_text = ?, order_index = ?
+       WHERE id = ?`,
+      [title, link, preview, statusKey, statusText, orderIndex, id]
+    );
+  } else {
+    await executeQuery(
+      `INSERT INTO portfolio_projects (title, link, preview, status_key, status_text, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [title, link, preview, statusKey, statusText, orderIndex]
+    );
+  }
+};
+
+export const deleteProject = async (id: number): Promise<void> => {
+  await executeQuery(
+    `DELETE FROM portfolio_projects WHERE id = ? LIMIT 1`,
+    [id]
+  );
+};
+
+// Certificates
+export const getAllCertificates = async (): Promise<CertificateRow[]> => {
+  return queryRows<CertificateRow[]>(
+    `SELECT id, provider, year, title, issuer, credential_id, verification_url, preview_pdf, tags, score, order_index, created_at, updated_at
+     FROM portfolio_certificates
+     ORDER BY order_index ASC`
+  );
+};
+
+export const upsertCertificate = async (
+  id: number | null,
+  provider: string,
+  year: string,
+  title: string,
+  issuer: string,
+  credentialId: string,
+  verificationUrl: string,
+  previewPdf: string,
+  tags: string,
+  score: string | null,
+  orderIndex = 0
+): Promise<void> => {
+  if (id && id > 0) {
+    await executeQuery(
+      `UPDATE portfolio_certificates
+       SET provider = ?, year = ?, title = ?, issuer = ?, credential_id = ?, verification_url = ?, preview_pdf = ?, tags = ?, score = ?, order_index = ?
+       WHERE id = ?`,
+      [provider, year, title, issuer, credentialId, verificationUrl, previewPdf, tags, score, orderIndex, id]
+    );
+  } else {
+    await executeQuery(
+      `INSERT INTO portfolio_certificates (provider, year, title, issuer, credential_id, verification_url, preview_pdf, tags, score, order_index)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [provider, year, title, issuer, credentialId, verificationUrl, previewPdf, tags, score, orderIndex]
+    );
+  }
+};
+
+export const deleteCertificate = async (id: number): Promise<void> => {
+  await executeQuery(
+    `DELETE FROM portfolio_certificates WHERE id = ? LIMIT 1`,
+    [id]
+  );
+};
+
+// Translations
+export const getAllTranslations = async (): Promise<TranslationRow[]> => {
+  return queryRows<TranslationRow[]>(
+    `SELECT id, translation_key, en, id_text, created_at, updated_at
+     FROM site_translations
+     ORDER BY translation_key ASC`
+  );
+};
+
+export const upsertTranslation = async (
+  id: number | null,
+  translationKey: string,
+  en: string,
+  idText: string
+): Promise<void> => {
+  if (id && id > 0) {
+    await executeQuery(
+      `UPDATE site_translations
+       SET translation_key = ?, en = ?, id_text = ?
+       WHERE id = ?`,
+      [translationKey, en, idText, id]
+    );
+  } else {
+    await executeQuery(
+      `INSERT INTO site_translations (translation_key, en, id_text)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE en = VALUES(en), id_text = VALUES(id_text)`,
+      [translationKey, en, idText]
+    );
+  }
+};
+
+export const deleteTranslation = async (id: number): Promise<void> => {
+  await executeQuery(
+    `DELETE FROM site_translations WHERE id = ? LIMIT 1`,
+    [id]
+  );
+};
+
+export interface SkillRow extends RowDataPacket {
+  id: number;
+  slug: string;
+  label: string;
+  image_url: string;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getAllSkills = async (): Promise<SkillRow[]> => {
+  return queryRows<SkillRow[]>(
+    `SELECT id, slug, label, image_url, order_index, created_at, updated_at
+     FROM portfolio_skills
+     ORDER BY order_index ASC`
+  );
+};
+
+export const upsertSkill = async (
+  id: number | null,
+  slug: string,
+  label: string,
+  imageUrl: string,
+  orderIndex = 0
+): Promise<void> => {
+  if (id && id > 0) {
+    await executeQuery(
+      `UPDATE portfolio_skills
+       SET slug = ?, label = ?, image_url = ?, order_index = ?
+       WHERE id = ?`,
+      [slug, label, imageUrl, orderIndex, id]
+    );
+  } else {
+    await executeQuery(
+      `INSERT INTO portfolio_skills (slug, label, image_url, order_index)
+       VALUES (?, ?, ?, ?)`,
+      [slug, label, imageUrl, orderIndex]
+    );
+  }
+};
+
+export const deleteSkill = async (id: number): Promise<void> => {
+  await executeQuery(
+    `DELETE FROM portfolio_skills WHERE id = ? LIMIT 1`,
+    [id]
+  );
+};
+
+export const getSettingValue = async (key: string, defaultValue = ""): Promise<string> => {
+  try {
+    const rows = await queryRows<SiteSetting[]>(
+      `SELECT setting_value FROM site_settings WHERE setting_key = ? LIMIT 1`,
+      [key]
+    );
+    return rows.length > 0 ? rows[0].setting_value : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
+

@@ -88,11 +88,11 @@ CREATE TABLE IF NOT EXISTS monitoring_events (
 
 -- Seed default superadmin:
 -- username: fikrihaikal17
--- password: 386776Haikal
+-- password: [REDACTED]
 INSERT INTO admin_users (username, password_hash, role, is_active)
 VALUES (
   'fikrihaikal17',
-  '$2b$12$aOwaDCSaKE9QlctTkSgLLeSKVlBR/8Tu8esNgsk/298h3r3G/YuZO',
+  '$2b$12$s1KaFBgI6wC7y.DNsc.dveM/BU7uO.ItGjql.21OOpXbG8KRVgjBO',
   'superadmin',
   1
 )

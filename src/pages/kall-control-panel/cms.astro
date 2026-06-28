@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import AdminShell from "@/components/admin/AdminShell.astro";
-import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { ensureAdminOrRedirect, handleSudoVerification } from "@/lib/admin/page-helpers";
 import { formatDateTime, formatSettingKey } from "@/lib/admin/view-formatters";
 import {
   deleteCmsEntry,
@@ -25,6 +25,8 @@ if (Astro.request.method === "POST") {
   const action = String(formData.get("action") ?? "");
 
   try {
+    await handleSudoVerification(Astro, admin.username, formData);
+
     if (action === "save-cms") {
       const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
       const title = String(formData.get("title") ?? "").trim();
@@ -161,11 +163,11 @@ const cmsEntries = await getAllCmsEntries();
                         data-title={entry.title}
                         data-content={entry.content_json}
                         data-published={entry.is_published}
-                      >✏️ Edit</button>
+                      >Edit</button>
                       <form method="post" onsubmit="return confirm('Hapus CMS entry ini?');" style="margin: 0;">
                         <input type="hidden" name="action" value="delete-cms" />
                         <input type="hidden" name="cms_id" value={entry.id} />
-                        <button class="kebab-item danger-item" type="submit">🗑️ Hapus</button>
+                        <button class="kebab-item danger-item" type="submit">Hapus</button>
                       </form>
                     </div>
                   </div>

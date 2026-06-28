@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import AdminShell from "@/components/admin/AdminShell.astro";
-import { ensureAdminOrRedirect } from "@/lib/admin/page-helpers";
+import { ensureAdminOrRedirect, handleSudoVerification } from "@/lib/admin/page-helpers";
 import { formatDateTime, formatSettingKey } from "@/lib/admin/view-formatters";
 import {
   getAllSettings,
@@ -24,6 +24,8 @@ if (Astro.request.method === "POST") {
   const action = String(formData.get("action") ?? "");
 
   try {
+    await handleSudoVerification(Astro, admin.username, formData);
+
     if (action === "save-setting") {
       const key = String(formData.get("setting_key") ?? "").trim();
       const value = String(formData.get("setting_value") ?? "").trim();
@@ -137,7 +139,7 @@ const settings = await getAllSettings();
                         data-key={setting.setting_key}
                         data-type={setting.value_type}
                         data-value={setting.setting_value}
-                      >✏️ Edit</button>
+                      >Edit</button>
                     </div>
                   </div>
                 </td>

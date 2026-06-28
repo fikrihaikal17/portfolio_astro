@@ -4,6 +4,9 @@ import LogoWall from "../components/logoWall.astro";
 import SkillsList from "../React/SkillsList.tsx";
 import HeroThreeBackground from "../React/HeroThreeBackground.tsx";
 import HeroGsapController from "../React/HeroGsapController.tsx";
+import { getSettingValue } from "@/lib/admin/repository";
+
+const ownerName = await getSettingValue("owner_name", "Muhammad Fikri Haikal");
 ---
 
 <section
@@ -27,7 +30,7 @@ import HeroGsapController from "../React/HeroGsapController.tsx";
         data-i18n="home.greeting"
         data-intro
       >
-        Hi, I'm Muhammad Fikri Haikal
+        Hi, I'm {ownerName}
       </p>
       <div
         class="home-hero-intro flex flex-col space-y-3 md:space-y-4"

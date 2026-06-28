@@ -1,4 +1,12 @@
-<div id="public-chatbot" class="chatbot-root" aria-live="polite">
+---
+import { getSettingValue } from "@/lib/admin/repository";
+
+const ownerName = await getSettingValue("owner_name", "Muhammad Fikri Haikal");
+const nickname = ownerName.split(" ").slice(-1)[0] || "Haikal";
+const initials = ownerName.split(" ").map(w => w.charAt(0)).join("").toUpperCase().slice(0, 2);
+---
+
+<div id="public-chatbot" class="chatbot-root" data-owner-name={ownerName} data-nickname={nickname} aria-live="polite">
   <button
     id="public-chatbot-toggle"
     class="chatbot-fab"
@@ -14,7 +22,7 @@
   <section id="public-chatbot-panel" class="chatbot-panel" hidden>
     <header class="chatbot-header">
       <div class="chatbot-brand">
-        <span class="chatbot-avatar">FH</span>
+        <span class="chatbot-avatar">{initials}</span>
         <div class="chatbot-brand-copy">
           <p class="chatbot-title">Portfolio Assistant</p>
           <p class="chatbot-subtitle">Grounded on portfolio data</p>
@@ -32,15 +40,15 @@
     </header>
 
     <div class="chatbot-quick" aria-label="Quick questions">
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Bisa tanya apa saja tentang Haikal?">Bisa Tanya Apa?</button>
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Siapa Muhammad Fikri Haikal?">Tentang Haikal</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Bisa tanya apa saja tentang ${nickname}?`}>Bisa Tanya Apa?</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Siapa ${ownerName}?`}>Tentang {nickname}</button>
       <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Project utama apa saja di portfolio ini?">Project Utama</button>
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Apakah Haikal terbuka untuk kerja, kolaborasi, atau internship?">Kerja & Kolaborasi</button>
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Skill dan tech stack utama Haikal apa saja?">Skill & Tech Stack</button>
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Sertifikasi Haikal apa saja?">Sertifikasi</button>
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Layanan apa yang bisa dikerjakan Haikal?">Layanan</button>
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Domisili Haikal dan apakah bisa remote?">Domisili & Remote</button>
-      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt="Bagaimana cara menghubungi Haikal untuk kolaborasi?">Cara Kontak</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Apakah ${nickname} terbuka untuk kerja, kolaborasi, atau internship?`}>Kerja & Kolaborasi</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Skill dan tech stack utama ${nickname} apa saja?`}>Skill & Tech Stack</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Sertifikasi ${nickname} apa saja?`}>Sertifikasi</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Layanan apa yang bisa dikerjakan ${nickname}?`}>Layanan</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Domisili ${nickname} dan apakah bisa remote?`}>Domisili & Remote</button>
+      <button type="button" class="chatbot-chip" data-cursor="interactive" data-prompt={`Bagaimana cara menghubungi ${nickname} untuk kolaborasi?`}>Cara Kontak</button>
     </div>
 
     <div id="public-chatbot-messages" class="chatbot-messages"></div>
@@ -429,9 +437,12 @@
     setOpen(false);
     resizeInput();
 
+    const chatbotRoot = document.getElementById("public-chatbot");
+    const ownerName = chatbotRoot?.getAttribute("data-owner-name") || "Muhammad Fikri Haikal";
+
     pushMessage(
       "assistant",
-      "Halo! Saya jawab berdasarkan data portfolio Muhammad Fikri Haikal.\nKamu bisa tanya tentang:\n1) Profil singkat\n2) Kerja/kolaborasi/internship\n3) Project utama\n4) Skill dan tech stack\n5) Sertifikasi\n6) Layanan dan kontak.",
+      `Halo! Saya jawab berdasarkan data portfolio ${ownerName}.\nKamu bisa tanya tentang:\n1) Profil singkat\n2) Kerja/kolaborasi/internship\n3) Project utama\n4) Skill dan tech stack\n5) Sertifikasi\n6) Layanan dan kontak.`,
       "system"
     );
   })();

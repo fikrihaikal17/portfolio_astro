@@ -4,6 +4,7 @@ import {
   buildPortfolioContext,
   defaultQuestionSuggestions,
 } from "@/lib/chatbot/portfolio-knowledge";
+import { getSettingValue } from "@/lib/admin/repository";
 
 export const prerender = false;
 
@@ -25,15 +26,6 @@ interface CacheEntry {
   expiresAt: number;
 }
 
-const SYSTEM_PROMPT = [
-  "You are Portfolio Assistant for Muhammad Fikri Haikal.",
-  "Answer in Indonesian by default unless the user writes in English.",
-  "Use only factual information from PORTFOLIO_FACTS.",
-  "Reject requests outside portfolio scope (math, trivia, generic coding, unrelated personal advice) and redirect to portfolio questions.",
-  "Never invent biography details, education history, companies, project results, or personal data outside PORTFOLIO_FACTS.",
-  "If information is missing, clearly say it is not available in portfolio data and offer contact details from PORTFOLIO_FACTS.",
-  "Keep responses concise, practical, and in a natural chat style.",
-].join(" ");
 
 const PORTFOLIO_CONTEXT = buildPortfolioContext();
 
@@ -274,9 +266,9 @@ const isPortfolioScoped = (message: string, history: ChatTurn[]): boolean => {
   return recentHistory.some((item) => hasAnyKeyword(normalizeForCache(item.content), PORTFOLIO_SCOPE_KEYWORDS));
 };
 
-const buildOutOfScopeReply = (): string => {
+const buildOutOfScopeReply = (ownerName: string): string => {
   return [
-    "Maaf, saya hanya bisa menjawab hal yang terkait portfolio Muhammad Fikri Haikal.",
+    `Maaf, saya hanya bisa menjawab hal yang terkait portfolio ${ownerName}.`,
     "Silakan pilih pertanyaan yang relevan, misalnya:",
     `1) ${defaultQuestionSuggestions[0]}`,
     `2) ${defaultQuestionSuggestions[1]}`,
@@ -330,9 +322,18 @@ const setCachedReply = (cacheKey: string, reply: string, sourceProvider: string)
   });
 };
 
-const asOpenAiMessages = (history: ChatTurn[], message: string) => {
+const asOpenAiMessages = (history: ChatTurn[], message: string, ownerName: string) => {
+  const customSystemPrompt = [
+    `You are Portfolio Assistant for ${ownerName}.`,
+    "Answer in Indonesian by default unless the user writes in English.",
+    "Use only factual information from PORTFOLIO_FACTS.",
+    "Reject requests outside portfolio scope (math, trivia, generic coding, unrelated personal advice) and redirect to portfolio questions.",
+    "Never invent biography details, education history, companies, project results, or personal data outside PORTFOLIO_FACTS.",
+    "If information is missing, clearly say it is not available in portfolio data and offer contact details from PORTFOLIO_FACTS.",
+    "Keep responses concise, practical, and in a natural chat style.",
+  ].join(" ");
   return [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: customSystemPrompt },
     { role: "system", content: `PORTFOLIO_FACTS:\n${PORTFOLIO_CONTEXT}` },
     ...history.map((item) => ({ role: item.role, content: item.content })),
     { role: "user", content: message },
@@ -516,8 +517,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   const cacheKey = buildCacheKey(message);
 
+  const ownerName = await getSettingValue("owner_name", "Muhammad Fikri Haikal");
+
   if (!isPortfolioScoped(message, history)) {
-    const outOfScopeReply = buildOutOfScopeReply();
+    const outOfScopeReply = buildOutOfScopeReply(ownerName);
     setCachedReply(cacheKey, outOfScopeReply, "scope");
 
     return Response.json({
@@ -548,13 +551,13 @@ export const POST: APIRoute = async ({ request }) => {
   if (!consumeRateLimit(ip)) {
     return Response.json(
       {
-        error: "Terlalu banyak request. Coba lagi sebentar.",
+         error: "Terlalu banyak request. Coba lagi sebentar.",
       },
       { status: 429 }
     );
   }
 
-  const messages = asOpenAiMessages(history, message);
+  const messages = asOpenAiMessages(history, message, ownerName);
 
   const providers: Array<() => Promise<ProviderResult>> = [
     () => callGroq(messages),

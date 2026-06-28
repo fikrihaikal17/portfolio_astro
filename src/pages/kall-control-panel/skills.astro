@@ -1,0 +1,243 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect, handleSudoVerification } from "@/lib/admin/page-helpers";
+import { formatDateTime } from "@/lib/admin/view-formatters";
+import {
+  getAllSkills,
+  upsertSkill,
+  deleteSkill,
+  logAdminEvent,
+} from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    await handleSudoVerification(Astro, admin.username, formData);
+
+    if (action === "save-skill") {
+      const idVal = formData.get("skill_id");
+      const id = idVal ? Number(idVal) : null;
+      const slug = String(formData.get("slug") ?? "").trim();
+      const label = String(formData.get("label") ?? "").trim();
+      const imageUrl = String(formData.get("image_url") ?? "").trim();
+      const orderIndex = Number(formData.get("order_index") ?? "0");
+
+      if (!slug || !label || !imageUrl) {
+        throw new Error("Slug, label skill, dan url gambar wajib diisi.");
+      }
+
+      await upsertSkill(id, slug, label, imageUrl, orderIndex);
+      await logAdminEvent(
+        "skill_saved",
+        "admin-skills",
+        `Skill "${label}" disimpan oleh ${admin.username}`,
+        "info",
+        { id, slug, label },
+        admin.id
+      );
+      noticeMessage = "Skill berhasil disimpan.";
+    } else if (action === "delete-skill") {
+      const skillId = Number(formData.get("skill_id") ?? "0");
+      if (!Number.isFinite(skillId) || skillId <= 0) {
+        throw new Error("ID skill tidak valid.");
+      }
+
+      await deleteSkill(skillId);
+      await logAdminEvent(
+        "skill_deleted",
+        "admin-skills",
+        `Skill ID ${skillId} dihapus oleh ${admin.username}`,
+        "warning",
+        { skillId },
+        admin.id
+      );
+      noticeMessage = "Skill berhasil dihapus.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-skills",
+      `Aksi Skill gagal: ${errorMessage}`,
+      "error",
+      { action },
+      admin.id
+    );
+  }
+}
+
+const skills = await getAllSkills();
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Kelola Skill"
+  pageDescription="Kelola gambar dan label skill teknologi (scrolling marquee) yang ditampilkan di landing page."
+  activePath="/kall-control-panel/skills"
+  noticeMessage={noticeMessage}
+  errorMessage={errorMessage}
+>
+  <section class="section">
+    <h3>Manajemen Skill</h3>
+    <p class="sub">Tambah, ubah, atau hapus logo dan label skill di bawah ini.</p>
+
+    <form method="post" id="skill-form">
+      <input type="hidden" name="action" value="save-skill" />
+      <input type="hidden" name="skill_id" id="skill_id" value="" />
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="label">Nama/Label Skill</label>
+          <input id="label" name="label" placeholder="Contoh: Laravel" required />
+        </div>
+        <div class="form-group">
+          <label for="slug">Slug (Pencocokan File)</label>
+          <input id="slug" name="slug" placeholder="Contoh: laravel (tanpa spasi)" required />
+        </div>
+        <div class="form-group">
+          <label for="image_url">URL Gambar/SVG</label>
+          <input id="image_url" name="image_url" placeholder="Contoh: /svg/laravel.svg" required />
+        </div>
+        <div class="form-group">
+          <label for="order_index">Urutan Tampilan</label>
+          <input id="order_index" name="order_index" type="number" placeholder="Contoh: 0, 1, 2" value="0" required />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submit-btn">Simpan Skill</button>
+        <button type="button" id="cancel-btn" style="display: none; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border-subtle); color: var(--white-icon); border-radius: 8px; padding: 10px 16px; cursor: pointer;">Batal Edit</button>
+      </div>
+    </form>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Urutan</th>
+            <th>Preview</th>
+            <th>Label Skill</th>
+            <th>Slug</th>
+            <th>URL Gambar</th>
+            <th>Terakhir Diubah</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {skills.length === 0 ? (
+            <tr>
+              <td colspan="7" class="muted">Belum ada skill tersimpan.</td>
+            </tr>
+          ) : (
+            skills.map((skill) => (
+              <tr>
+                <td>{skill.order_index}</td>
+                <td>
+                  <div style="background: rgba(255, 255, 255, 0.05); padding: 6px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--border-subtle);">
+                    <img src={skill.image_url} alt={skill.label} style="max-width: 100%; max-height: 100%; object-contain: fill;" onerror="this.style.display='none';" />
+                  </div>
+                </td>
+                <td style="font-weight: 600; color: var(--white);">{skill.label}</td>
+                <td><code>{skill.slug}</code></td>
+                <td class="muted" style="font-size: 12px; font-family: monospace; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{skill.image_url}</td>
+                <td>{formatDateTime(skill.updated_at)}</td>
+                <td>
+                  <div class="action-wrap">
+                    <button type="button" class="kebab-btn" aria-label="Aksi">⋮</button>
+                    <div class="kebab-dropdown">
+                      <button
+                        type="button"
+                        class="kebab-item edit-btn"
+                        data-id={skill.id}
+                        data-label={skill.label}
+                        data-slug={skill.slug}
+                        data-image-url={skill.image_url}
+                        data-order-index={skill.order_index}
+                      >Edit</button>
+                      <form method="post" onsubmit="return confirm('Hapus skill ini?');" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete-skill" />
+                        <input type="hidden" name="skill_id" value={skill.id} />
+                        <button class="kebab-item danger-item" type="submit">Hapus</button>
+                      </form>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>
+
+<script>
+  // Kebab dropdown toggle
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    const trigger = target.closest(".kebab-btn");
+    const wrap = target.closest(".action-wrap");
+    
+    document.querySelectorAll(".action-wrap.open").forEach((el) => {
+      if (el !== wrap) el.classList.remove("open");
+    });
+    
+    if (trigger && wrap) {
+      wrap.classList.toggle("open");
+    }
+  });
+
+  // Edit logic
+  const editButtons = document.querySelectorAll(".edit-btn");
+  const form = document.getElementById("skill-form") as HTMLFormElement;
+  const idInput = document.getElementById("skill_id") as HTMLInputElement;
+  const labelInput = document.getElementById("label") as HTMLInputElement;
+  const slugInput = document.getElementById("slug") as HTMLInputElement;
+  const imageInput = document.getElementById("image_url") as HTMLInputElement;
+  const orderInput = document.getElementById("order_index") as HTMLInputElement;
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const cancelBtn = document.getElementById("cancel-btn") as HTMLButtonElement;
+
+  editButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id") ?? "";
+      const label = btn.getAttribute("data-label") ?? "";
+      const slug = btn.getAttribute("data-slug") ?? "";
+      const imageUrl = btn.getAttribute("data-image-url") ?? "";
+      const orderIndex = btn.getAttribute("data-order-index") ?? "0";
+
+      if (idInput) idInput.value = id;
+      if (labelInput) labelInput.value = label;
+      if (slugInput) slugInput.value = slug;
+      if (imageInput) imageInput.value = imageUrl;
+      if (orderInput) orderInput.value = orderIndex;
+
+      if (submitBtn) submitBtn.textContent = "Perbarui Skill";
+      if (cancelBtn) cancelBtn.style.display = "inline-block";
+
+      btn.closest(".action-wrap")?.classList.remove("open");
+      labelInput?.scrollIntoView({ behavior: "smooth", block: "center" });
+      labelInput?.focus();
+    });
+  });
+
+  cancelBtn?.addEventListener("click", () => {
+    if (form) form.reset();
+    if (idInput) idInput.value = "";
+    if (submitBtn) submitBtn.textContent = "Simpan Skill";
+    if (cancelBtn) cancelBtn.style.display = "none";
+  });
+</script>

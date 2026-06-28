@@ -1,0 +1,320 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect, handleSudoVerification } from "@/lib/admin/page-helpers";
+import { formatDateTime } from "@/lib/admin/view-formatters";
+import {
+  getAllCertificates,
+  upsertCertificate,
+  deleteCertificate,
+  logAdminEvent,
+} from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    await handleSudoVerification(Astro, admin.username, formData);
+
+    if (action === "save-certificate") {
+      const idVal = formData.get("certificate_id");
+      const id = idVal ? Number(idVal) : null;
+      const provider = String(formData.get("provider") ?? "").trim();
+      const year = String(formData.get("year") ?? "").trim();
+      const title = String(formData.get("title") ?? "").trim();
+      const issuer = String(formData.get("issuer") ?? "").trim();
+      const credentialId = String(formData.get("credential_id") ?? "").trim();
+      const verificationUrl = String(formData.get("verification_url") ?? "").trim();
+      const previewPdf = String(formData.get("preview_pdf") ?? "").trim();
+      const tags = String(formData.get("tags") ?? "").trim();
+      const scoreVal = String(formData.get("score") ?? "").trim();
+      const score = scoreVal || null;
+      const orderIndex = Number(formData.get("order_index") ?? "0");
+
+      if (!provider || !year || !title || !issuer || !verificationUrl || !previewPdf) {
+        throw new Error("Provider, tahun, judul, penerbit, link verifikasi, dan PDF preview wajib diisi.");
+      }
+
+      await upsertCertificate(
+        id,
+        provider,
+        year,
+        title,
+        issuer,
+        credentialId,
+        verificationUrl,
+        previewPdf,
+        tags,
+        score,
+        orderIndex
+      );
+
+      await logAdminEvent(
+        "certificate_saved",
+        "admin-certificates",
+        `Sertifikat "${title}" disimpan oleh ${admin.username}`,
+        "info",
+        { id, title },
+        admin.id
+      );
+      noticeMessage = "Sertifikat berhasil disimpan.";
+    } else if (action === "delete-certificate") {
+      const certId = Number(formData.get("certificate_id") ?? "0");
+      if (!Number.isFinite(certId) || certId <= 0) {
+        throw new Error("ID sertifikat tidak valid.");
+      }
+
+      await deleteCertificate(certId);
+      await logAdminEvent(
+        "certificate_deleted",
+        "admin-certificates",
+        `Sertifikat ID ${certId} dihapus oleh ${admin.username}`,
+        "warning",
+        { certId },
+        admin.id
+      );
+      noticeMessage = "Sertifikat berhasil dihapus.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-certificates",
+      `Aksi Sertifikat gagal: ${errorMessage}`,
+      "error",
+      { action },
+      admin.id
+    );
+  }
+}
+
+const certificates = await getAllCertificates();
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Kelola Sertifikat"
+  pageDescription="Kelola daftar kredensial sertifikasi dan skor ujian bahasa yang ditampilkan di landing page."
+  activePath="/kall-control-panel/certificates"
+  noticeMessage={noticeMessage}
+  errorMessage={errorMessage}
+>
+  <section class="section">
+    <h3>Manajemen Kredensial & Sertifikasi</h3>
+    <p class="sub">Tambah, ubah, atau hapus item sertifikasi di bawah ini.</p>
+
+    <form method="post" id="certificate-form">
+      <input type="hidden" name="action" value="save-certificate" />
+      <input type="hidden" name="certificate_id" id="certificate_id" value="" />
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="provider">Provider Sertifikat</label>
+          <input id="provider" name="provider" placeholder="Contoh: Dicoding, BLTI, ETS" required />
+        </div>
+        <div class="form-group">
+          <label for="year">Tahun Perolehan</label>
+          <input id="year" name="year" placeholder="Contoh: 2026" maxlength="4" required />
+        </div>
+        <div class="form-group full">
+          <label for="title">Nama Sertifikasi / Judul Kredensial</label>
+          <input id="title" name="title" placeholder="Contoh: Back-End dengan JavaScript" required style="width: 100%;" />
+        </div>
+        <div class="form-group">
+          <label for="issuer">Lembaga Penerbit (Issuer)</label>
+          <input id="issuer" name="issuer" placeholder="Contoh: Dicoding Indonesia" required />
+        </div>
+        <div class="form-group">
+          <label for="credential_id">ID Kredensial (Credential ID)</label>
+          <input id="credential_id" name="credential_id" placeholder="Contoh: 2VX35DR3JPYQ" />
+        </div>
+        <div class="form-group full">
+          <label for="verification_url">URL Verifikasi Kredensial</label>
+          <input id="verification_url" name="verification_url" placeholder="Contoh: https://www.dicoding.com/certificates/2VX35DR3JPYQ" required style="width: 100%;" />
+        </div>
+        <div class="form-group full">
+          <label for="preview_pdf">Path File PDF Preview (Lokasi Lokal)</label>
+          <input id="preview_pdf" name="preview_pdf" placeholder="Contoh: /certificates/dicoding-back-end-javascript-2026.pdf" required style="width: 100%;" />
+        </div>
+        <div class="form-group">
+          <label for="tags">Daftar Tag (Pisahkan dengan koma)</label>
+          <input id="tags" name="tags" placeholder="Contoh: JavaScript,Back-End,API" />
+        </div>
+        <div class="form-group">
+          <label for="score">Skor Ujian (Opsional)</label>
+          <input id="score" name="score" placeholder="Contoh: 835 (Kosongkan jika tidak ada)" />
+        </div>
+        <div class="form-group">
+          <label for="order_index">Urutan Tampilan</label>
+          <input id="order_index" name="order_index" type="number" placeholder="Contoh: 0, 1" value="0" required />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submit-btn">Simpan Sertifikat</button>
+        <button type="button" id="cancel-btn" style="display: none; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border-subtle); color: var(--white-icon); border-radius: 8px; padding: 10px 16px; cursor: pointer;">Batal Edit</button>
+      </div>
+    </form>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Urutan</th>
+            <th>Provider / Tahun</th>
+            <th>Nama Sertifikasi</th>
+            <th>Credential ID / Skor</th>
+            <th>File PDF & Link</th>
+            <th>Terakhir Diubah</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {certificates.length === 0 ? (
+            <tr>
+              <td colspan="7" class="muted">Belum ada sertifikat tersimpan.</td>
+            </tr>
+          ) : (
+            certificates.map((cert) => (
+              <tr>
+                <td>{cert.order_index}</td>
+                <td>
+                  <strong>{cert.provider}</strong>
+                  <div class="muted" style="font-size: 11px;">{cert.year}</div>
+                </td>
+                <td style="font-weight: 600; color: var(--white);">{cert.title}</td>
+                <td>
+                  <div style="font-size: 12px;"><strong>ID:</strong> {cert.credential_id || "-"}</div>
+                  {cert.score && <div class="badge" style="background: rgba(164, 118, 255, 0.2); border: 1px solid var(--sec); color: var(--sec); font-size: 10px; margin-top: 4px;">Score: {cert.score}</div>}
+                </td>
+                <td>
+                  <div style="font-size: 12px; line-height: 1.4;">
+                    <div><strong>PDF:</strong> <code style="font-size:10px; color: var(--white-icon);">{cert.preview_pdf}</code></div>
+                    <div><strong>Link:</strong> <a href={cert.verification_url} target="_blank" style="color: var(--sec); text-decoration: none;">Verifikasi ↗</a></div>
+                  </div>
+                </td>
+                <td>{formatDateTime(cert.updated_at)}</td>
+                <td>
+                  <div class="action-wrap">
+                    <button type="button" class="kebab-btn" aria-label="Aksi">⋮</button>
+                    <div class="kebab-dropdown">
+                      <button
+                        type="button"
+                        class="kebab-item edit-btn"
+                        data-id={cert.id}
+                        data-provider={cert.provider}
+                        data-year={cert.year}
+                        data-title={cert.title}
+                        data-issuer={cert.issuer}
+                        data-credential-id={cert.credential_id}
+                        data-verification-url={cert.verification_url}
+                        data-preview-pdf={cert.preview_pdf}
+                        data-tags={cert.tags}
+                        data-score={cert.score || ""}
+                        data-order-index={cert.order_index}
+                      >Edit</button>
+                      <form method="post" onsubmit="return confirm('Hapus sertifikat ini?');" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete-certificate" />
+                        <input type="hidden" name="certificate_id" value={cert.id} />
+                        <button class="kebab-item danger-item" type="submit">Hapus</button>
+                      </form>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>
+
+<script>
+  // Kebab dropdown toggle
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    const trigger = target.closest(".kebab-btn");
+    const wrap = target.closest(".action-wrap");
+
+    document.querySelectorAll(".action-wrap.open").forEach((el) => {
+      if (el !== wrap) el.classList.remove("open");
+    });
+
+    if (trigger && wrap) {
+      wrap.classList.toggle("open");
+    }
+  });
+
+  const form = document.getElementById("certificate-form") as HTMLFormElement;
+  const idInput = document.getElementById("certificate_id") as HTMLInputElement;
+  const providerInput = document.getElementById("provider") as HTMLInputElement;
+  const yearInput = document.getElementById("year") as HTMLInputElement;
+  const titleInput = document.getElementById("title") as HTMLInputElement;
+  const issuerInput = document.getElementById("issuer") as HTMLInputElement;
+  const credentialInput = document.getElementById("credential_id") as HTMLInputElement;
+  const verificationInput = document.getElementById("verification_url") as HTMLInputElement;
+  const previewInput = document.getElementById("preview_pdf") as HTMLInputElement;
+  const tagsInput = document.getElementById("tags") as HTMLInputElement;
+  const scoreInput = document.getElementById("score") as HTMLInputElement;
+  const orderInput = document.getElementById("order_index") as HTMLInputElement;
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const cancelBtn = document.getElementById("cancel-btn") as HTMLButtonElement;
+
+  const editButtons = document.querySelectorAll(".edit-btn");
+
+  editButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id") || "";
+      const provider = btn.getAttribute("data-provider") || "";
+      const year = btn.getAttribute("data-year") || "";
+      const title = btn.getAttribute("data-title") || "";
+      const issuer = btn.getAttribute("data-issuer") || "";
+      const credentialId = btn.getAttribute("data-credential-id") || "";
+      const verificationUrl = btn.getAttribute("data-verification-url") || "";
+      const previewPdf = btn.getAttribute("data-preview-pdf") || "";
+      const tags = btn.getAttribute("data-tags") || "";
+      const score = btn.getAttribute("data-score") || "";
+      const orderIndex = btn.getAttribute("data-order-index") || "0";
+
+      if (idInput) idInput.value = id;
+      if (providerInput) providerInput.value = provider;
+      if (yearInput) yearInput.value = year;
+      if (titleInput) titleInput.value = title;
+      if (issuerInput) issuerInput.value = issuer;
+      if (credentialInput) credentialInput.value = credentialId;
+      if (verificationInput) verificationInput.value = verificationUrl;
+      if (previewInput) previewInput.value = previewPdf;
+      if (tagsInput) tagsInput.value = tags;
+      if (scoreInput) scoreInput.value = score;
+      if (orderInput) orderInput.value = orderIndex;
+
+      if (submitBtn) submitBtn.textContent = "Perbarui Sertifikat";
+      if (cancelBtn) cancelBtn.style.display = "inline-block";
+
+      // Close the kebab dropdown
+      btn.closest(".action-wrap")?.classList.remove("open");
+      providerInput?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      if (form) form.reset();
+      if (idInput) idInput.value = "";
+      if (submitBtn) submitBtn.textContent = "Simpan Sertifikat";
+      cancelBtn.style.display = "none";
+    });
+  }
+</script>

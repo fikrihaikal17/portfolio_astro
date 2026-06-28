@@ -1,0 +1,271 @@
+---
+export const prerender = false;
+
+import AdminShell from "@/components/admin/AdminShell.astro";
+import { ensureAdminOrRedirect, handleSudoVerification } from "@/lib/admin/page-helpers";
+import { formatDateTime } from "@/lib/admin/view-formatters";
+import {
+  getAllProjects,
+  upsertProject,
+  deleteProject,
+  logAdminEvent,
+} from "@/lib/admin/repository";
+
+const { currentAdmin, response } = await ensureAdminOrRedirect(Astro);
+if (response) {
+  return response;
+}
+const admin = currentAdmin!;
+
+let noticeMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = String(formData.get("action") ?? "");
+
+  try {
+    await handleSudoVerification(Astro, admin.username, formData);
+
+    if (action === "save-project") {
+      const idVal = formData.get("project_id");
+      const id = idVal ? Number(idVal) : null;
+      const title = String(formData.get("title") ?? "").trim();
+      const link = String(formData.get("link") ?? "").trim();
+      const preview = String(formData.get("preview") ?? "").trim();
+      const statusKey = String(formData.get("status_key") ?? "").trim();
+      const statusText = String(formData.get("status_text") ?? "").trim();
+      const orderIndex = Number(formData.get("order_index") ?? "0");
+
+      if (!title || !statusKey || !statusText) {
+        throw new Error("Judul proyek, status key, dan status text wajib diisi.");
+      }
+
+      await upsertProject(id, title, link, preview, statusKey, statusText, orderIndex);
+      await logAdminEvent(
+        "project_saved",
+        "admin-projects",
+        `Proyek "${title}" disimpan oleh ${admin.username}`,
+        "info",
+        { id, title },
+        admin.id
+      );
+      noticeMessage = "Proyek berhasil disimpan.";
+    } else if (action === "delete-project") {
+      const projectId = Number(formData.get("project_id") ?? "0");
+      if (!Number.isFinite(projectId) || projectId <= 0) {
+        throw new Error("ID proyek tidak valid.");
+      }
+
+      await deleteProject(projectId);
+      await logAdminEvent(
+        "project_deleted",
+        "admin-projects",
+        `Proyek ID ${projectId} dihapus oleh ${admin.username}`,
+        "warning",
+        { projectId },
+        admin.id
+      );
+      noticeMessage = "Proyek berhasil dihapus.";
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.";
+    await logAdminEvent(
+      "admin_action_failed",
+      "admin-projects",
+      `Aksi Proyek gagal: ${errorMessage}`,
+      "error",
+      { action },
+      admin.id
+    );
+  }
+}
+
+const projects = await getAllProjects();
+---
+
+<AdminShell
+  currentAdmin={admin}
+  pageTitle="Kelola Proyek"
+  pageDescription="Kelola daftar portofolio proyek dinamis yang ditampilkan di landing page utama."
+  activePath="/kall-control-panel/projects"
+  noticeMessage={noticeMessage}
+  errorMessage={errorMessage}
+>
+  <section class="section">
+    <h3>Manajemen Proyek</h3>
+    <p class="sub">Tambah, ubah, atau hapus item proyek portofolio di bawah ini.</p>
+
+    <form method="post" id="project-form">
+      <input type="hidden" name="action" value="save-project" />
+      <input type="hidden" name="project_id" id="project_id" value="" />
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="title">Judul Proyek</label>
+          <input id="title" name="title" placeholder="Contoh: Smart Classroom (IoT)" required />
+        </div>
+        <div class="form-group">
+          <label for="order_index">Urutan Tampilan</label>
+          <input id="order_index" name="order_index" type="number" placeholder="Contoh: 0, 1, 2" value="0" required />
+        </div>
+        <div class="form-group">
+          <label for="link">Tautan GitHub / Source Code</label>
+          <input id="link" name="link" placeholder="Contoh: https://github.com/username/project" required />
+        </div>
+        <div class="form-group">
+          <label for="preview">Tautan Live Preview</label>
+          <input id="preview" name="preview" placeholder="Contoh: https://project.example.com" required />
+        </div>
+        <div class="form-group">
+          <label for="status_key">Status Key (Terjemahan)</label>
+          <select id="status_key" name="status_key" required style="border-radius: 10px; border: 1px solid var(--border-subtle); background: color-mix(in srgb, var(--background) 70%, transparent); color: var(--white); padding: 10px 12px; font: inherit; font-size: 13px; outline: none; width: 100%;">
+            <option value="projects.status.deployed">Deployed (projects.status.deployed)</option>
+            <option value="projects.status.onDevelopment">On Development (projects.status.onDevelopment)</option>
+            <option value="projects.status.internship">Internship Project (projects.status.internship)</option>
+            <option value="projects.status.prototype">Prototype (projects.status.prototype)</option>
+            <option value="projects.status.contributor">Contributor (projects.status.contributor)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="status_text">Status Text (Default English)</label>
+          <input id="status_text" name="status_text" placeholder="Contoh: Deployed" required />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submit-btn">Simpan Proyek</button>
+        <button type="button" id="cancel-btn" style="display: none; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border-subtle); color: var(--white-icon); border-radius: 8px; padding: 10px 16px; cursor: pointer;">Batal Edit</button>
+      </div>
+    </form>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Urutan</th>
+            <th>Judul Proyek</th>
+            <th>GitHub / Preview</th>
+            <th>Status (Key / Text)</th>
+            <th>Terakhir Diubah</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {projects.length === 0 ? (
+            <tr>
+              <td colspan="6" class="muted">Belum ada proyek tersimpan.</td>
+            </tr>
+          ) : (
+            projects.map((project) => (
+              <tr>
+                <td>{project.order_index}</td>
+                <td style="font-weight: 600; color: var(--white);">{project.title}</td>
+                <td>
+                  <div style="font-size: 12px;">
+                    <div><strong>Code:</strong> <a href={project.link} target="_blank" style="color: var(--sec); text-decoration: none;">GitHub ↗</a></div>
+                    <div><strong>Live:</strong> <a href={project.preview} target="_blank" style="color: var(--sec); text-decoration: none;">Preview ↗</a></div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" style="font-size: 11px; margin-bottom: 4px; display: inline-block;">{project.status_text}</span>
+                  <div class="muted" style="font-size: 10px;">{project.status_key}</div>
+                </td>
+                <td>{formatDateTime(project.updated_at)}</td>
+                <td>
+                  <div class="action-wrap">
+                    <button type="button" class="kebab-btn" aria-label="Aksi">⋮</button>
+                    <div class="kebab-dropdown">
+                      <button
+                        type="button"
+                        class="kebab-item edit-btn"
+                        data-id={project.id}
+                        data-title={project.title}
+                        data-link={project.link}
+                        data-preview={project.preview}
+                        data-status-key={project.status_key}
+                        data-status-text={project.status_text}
+                        data-order-index={project.order_index}
+                      >Edit</button>
+                      <form method="post" onsubmit="return confirm('Hapus proyek ini?');" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete-project" />
+                        <input type="hidden" name="project_id" value={project.id} />
+                        <button class="kebab-item danger-item" type="submit">Hapus</button>
+                      </form>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminShell>
+
+<script>
+  // Kebab dropdown toggle
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    const trigger = target.closest(".kebab-btn");
+    const wrap = target.closest(".action-wrap");
+
+    document.querySelectorAll(".action-wrap.open").forEach((el) => {
+      if (el !== wrap) el.classList.remove("open");
+    });
+
+    if (trigger && wrap) {
+      wrap.classList.toggle("open");
+    }
+  });
+
+  const form = document.getElementById("project-form") as HTMLFormElement;
+  const idInput = document.getElementById("project_id") as HTMLInputElement;
+  const titleInput = document.getElementById("title") as HTMLInputElement;
+  const linkInput = document.getElementById("link") as HTMLInputElement;
+  const previewInput = document.getElementById("preview") as HTMLInputElement;
+  const statusKeySelect = document.getElementById("status_key") as HTMLSelectElement;
+  const statusTextInput = document.getElementById("status_text") as HTMLInputElement;
+  const orderInput = document.getElementById("order_index") as HTMLInputElement;
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const cancelBtn = document.getElementById("cancel-btn") as HTMLButtonElement;
+
+  const editButtons = document.querySelectorAll(".edit-btn");
+
+  editButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id") || "";
+      const title = btn.getAttribute("data-title") || "";
+      const link = btn.getAttribute("data-link") || "";
+      const preview = btn.getAttribute("data-preview") || "";
+      const statusKey = btn.getAttribute("data-status-key") || "projects.status.deployed";
+      const statusText = btn.getAttribute("data-status-text") || "";
+      const orderIndex = btn.getAttribute("data-order-index") || "0";
+
+      if (idInput) idInput.value = id;
+      if (titleInput) titleInput.value = title;
+      if (linkInput) linkInput.value = link;
+      if (previewInput) previewInput.value = preview;
+      if (statusKeySelect) statusKeySelect.value = statusKey;
+      if (statusTextInput) statusTextInput.value = statusText;
+      if (orderInput) orderInput.value = orderIndex;
+
+      if (submitBtn) submitBtn.textContent = "Perbarui Proyek";
+      if (cancelBtn) cancelBtn.style.display = "inline-block";
+
+      // Close the kebab dropdown
+      btn.closest(".action-wrap")?.classList.remove("open");
+      titleInput?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      if (form) form.reset();
+      if (idInput) idInput.value = "";
+      if (submitBtn) submitBtn.textContent = "Simpan Proyek";
+      cancelBtn.style.display = "none";
+    });
+  }
+</script>

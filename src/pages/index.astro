@@ -6,9 +6,12 @@ import Projects from "@/components/projects.astro";
 import Certification from "@/components/certification.astro";
 import Contact from "@/components/contact.astro";
 import Footer from "@/components/footer.astro";
+import { getSettingValue } from "@/lib/admin/repository";
+
+const ownerName = await getSettingValue("owner_name", "Muhammad Fikri Haikal");
 ---
 
-<Layout title="Muhammad Fikri Haikal">
+<Layout title={ownerName}>
   <Nav />
   <Home />
   <Projects />

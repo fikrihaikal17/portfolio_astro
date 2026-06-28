@@ -33,8 +33,6 @@ const navItems = [
     group: "Menu Utama",
     items: [
       { href: `${baseUrl}kall-control-panel`, label: "Dashboard Utama" },
-      { href: `${baseUrl}kall-control-panel/monitoring/views`, label: "Monitoring - Views Per Hari" },
-      { href: `${baseUrl}kall-control-panel/monitoring/content`, label: "Monitoring - Konten Web Public" },
     ],
   },
   {
@@ -42,6 +40,9 @@ const navItems = [
     items: [
       { href: `${baseUrl}kall-control-panel/cms`, label: "CMS Pages" },
       { href: `${baseUrl}kall-control-panel/settings`, label: "Website Settings" },
+      { href: `${baseUrl}kall-control-panel/projects`, label: "Kelola Proyek" },
+      { href: `${baseUrl}kall-control-panel/certificates`, label: "Kelola Sertifikat" },
+      { href: `${baseUrl}kall-control-panel/skills`, label: "Kelola Skill" },
     ],
   },
   {
@@ -52,6 +53,8 @@ const navItems = [
     ],
   },
 ];
+
+const isSudoActive = Astro.cookies.get("superadmin_sudo_active")?.value === "true";
 ---
 
 <html lang="id" data-base-url={baseUrl}>
@@ -144,7 +147,194 @@ const navItems = [
       </main>
     </div>
 
+    <!-- Sudo Mode & Delete Confirmation Modal -->
+    <div id="sudo-modal" class="modal-overlay" data-sudo-active={isSudoActive ? "true" : "false"}>
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="sudo-modal-title">Konfirmasi Keamanan</h3>
+          <button type="button" id="sudo-modal-close" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="sudo-modal-message">Masukkan password superadmin untuk melanjutkan tindakan ini.</p>
+          <div class="form-group" id="sudo-password-container">
+            <label for="sudo-password-input">Password Superadmin</label>
+            <input type="password" id="sudo-password-input" placeholder="Masukkan password Anda" />
+            <span class="error-text" id="sudo-password-error" style="display: none; color: #ff788a; font-size: 12px; margin-top: 4px;"></span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="sudo-modal-cancel" class="btn btn-muted">Batal</button>
+          <button type="button" id="sudo-modal-confirm" class="btn btn-primary">Konfirmasi</button>
+        </div>
+      </div>
+    </div>
+
     <script>
+      // ── Form Interceptor for Sudo Verification ──
+      document.addEventListener("submit", (e) => {
+        const form = e.target as HTMLFormElement | null;
+        if (!form || form.method !== "post") return;
+
+        // Skip logout/login/auth forms
+        const actionAttr = form.getAttribute("action") || "";
+        if (actionAttr.includes("/logout") || actionAttr.includes("/login")) return;
+
+        // Check if form has already been verified and verified by this script
+        if (form.dataset.sudoVerified === "true") return;
+
+        // Identify if form is delete or save/edit action
+        const actionInput = form.querySelector('input[name="action"]') as HTMLInputElement | null;
+        if (!actionInput) return;
+
+        const actionValue = actionInput.value;
+        const isDelete = actionValue.startsWith("delete-");
+        const isSave = actionValue.startsWith("save-");
+
+        if (!isDelete && !isSave) return;
+
+        // Prevent default submission
+        e.preventDefault();
+
+        const modal = document.getElementById("sudo-modal");
+        const titleEl = document.getElementById("sudo-modal-title");
+        const messageEl = document.getElementById("sudo-modal-message");
+        const passwordContainer = document.getElementById("sudo-password-container");
+        const passwordInput = document.getElementById("sudo-password-input") as HTMLInputElement | null;
+        const errorEl = document.getElementById("sudo-password-error");
+        const confirmBtn = document.getElementById("sudo-modal-confirm");
+        const cancelBtn = document.getElementById("sudo-modal-cancel");
+        const closeBtn = document.getElementById("sudo-modal-close");
+
+        if (!modal || !titleEl || !messageEl || !passwordContainer || !passwordInput || !errorEl || !confirmBtn) {
+          // Fallback to basic prompt
+          if (confirm("Apakah Anda yakin?")) {
+            form.dataset.sudoVerified = "true";
+            form.submit();
+          }
+          return;
+        }
+
+        // Check if sudo session is active via DOM data attribute
+        const isSudoActive = modal.dataset.sudoActive === "true";
+
+        // Clear previous values
+        passwordInput.value = "";
+        errorEl.style.display = "none";
+        errorEl.innerText = "";
+
+        if (isSudoActive) {
+          // User is in sudo mode.
+          if (isDelete) {
+            // Just show confirmation modal (no password required)
+            titleEl.innerText = "Konfirmasi Hapus";
+            messageEl.innerText = "Apakah Anda yakin ingin menghapus data ini?";
+            passwordContainer.style.display = "none";
+            confirmBtn.className = "btn btn-danger";
+            confirmBtn.innerText = "Hapus";
+          } else {
+            // Direct submit for save/edit actions
+            form.dataset.sudoVerified = "true";
+            form.submit();
+            return;
+          }
+        } else {
+          // User is NOT in sudo mode.
+          passwordContainer.style.display = "flex";
+          passwordInput.setAttribute("required", "required");
+          if (isDelete) {
+            titleEl.innerText = "Verifikasi Keamanan (Hapus)";
+            messageEl.innerText = "Tindakan ini memerlukan verifikasi password superadmin.";
+            confirmBtn.className = "btn btn-danger";
+            confirmBtn.innerText = "Verifikasi & Hapus";
+          } else {
+            titleEl.innerText = "Verifikasi Keamanan";
+            messageEl.innerText = "Untuk menyimpan perubahan, silakan masukkan password superadmin Anda.";
+            confirmBtn.className = "btn btn-primary";
+            confirmBtn.innerText = "Verifikasi & Simpan";
+          }
+        }
+
+        // Open modal
+        modal.classList.add("open");
+        passwordInput.focus();
+
+        // Cleanup active listeners
+        const cleanup = () => {
+          modal.classList.remove("open");
+        };
+
+        const handleConfirm = async () => {
+          if (!isSudoActive) {
+            const password = passwordInput.value.trim();
+            if (!password) {
+              errorEl.innerText = "Password wajib diisi.";
+              errorEl.style.display = "block";
+              return;
+            }
+
+            confirmBtn.innerText = "Memverifikasi...";
+            confirmBtn.setAttribute("disabled", "true");
+
+            try {
+              const base = document.documentElement.getAttribute("data-base-url") || "/";
+              const apiUrl = base + (base.endsWith("/") ? "" : "/") + "api/admin/verify-sudo";
+              const response = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password }),
+              });
+              const result = await response.json();
+              if (!response.ok || !result.success) {
+                errorEl.innerText = result.error || "Password verifikasi salah.";
+                errorEl.style.display = "block";
+                confirmBtn.innerText = isDelete ? "Verifikasi & Hapus" : "Verifikasi & Simpan";
+                confirmBtn.removeAttribute("disabled");
+                return;
+              }
+            } catch (err) {
+              errorEl.innerText = "Gagal memverifikasi keamanan. Coba lagi.";
+              errorEl.style.display = "block";
+              confirmBtn.innerText = isDelete ? "Verifikasi & Hapus" : "Verifikasi & Simpan";
+              confirmBtn.removeAttribute("disabled");
+              return;
+            }
+          }
+
+          cleanup();
+          // Save scroll position before page reload
+          try { sessionStorage.setItem("admin_scroll_pos", String(window.scrollY)); } catch {}
+          form.dataset.sudoVerified = "true";
+          form.submit();
+        };
+
+        // Assign button listeners
+        confirmBtn.onclick = handleConfirm;
+        
+        // Enter key press in password input
+        passwordInput.onkeydown = (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            handleConfirm();
+          }
+        };
+
+        if (cancelBtn) cancelBtn.onclick = cleanup;
+        if (closeBtn) closeBtn.onclick = cleanup;
+        modal.onclick = (event) => {
+          if (event.target === modal) cleanup();
+        };
+      });
+
+      // ── Restore Scroll Position After Page Reload ──
+      try {
+        const savedPos = sessionStorage.getItem("admin_scroll_pos");
+        if (savedPos !== null) {
+          sessionStorage.removeItem("admin_scroll_pos");
+          window.scrollTo({ top: Number(savedPos), behavior: "instant" });
+        }
+      } catch {}
+
+      // ── Theme Preference Handling ──
       const themeKey = "theme-preference";
       const root = document.documentElement;
       const themeToggle = document.getElementById("theme-toggle");

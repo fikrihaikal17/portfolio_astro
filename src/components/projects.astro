@@ -1,4 +1,6 @@
 ---
+import { getAllProjects } from "@/lib/admin/repository";
+
 interface Project {
   title: string;
   link: string;
@@ -7,65 +9,21 @@ interface Project {
   statusText: string;
 }
 
-const projects: Project[] = [
-  {
-    title: "Calakan - Islamic PWA",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://calakan.smkn1ciamis.id",
-    statusKey: "projects.status.deployed",
-    statusText: "Deployed",
-  },
-  {
-    title: "Niskala - Publishing Platform",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://github.com/fikrihaikal17",
-    statusKey: "projects.status.internship",
-    statusText: "Internship Project",
-  },
-  {
-    title: "KWS - Kumpulan Wargi Sukapura",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://github.com/fikrihaikal17",
-    statusKey: "projects.status.internship",
-    statusText: "Internship Project",
-  },
-  {
-    title: "Smart Automatic Trash Bin (IoT)",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://github.com/fikrihaikal17",
-    statusKey: "projects.status.prototype",
-    statusText: "Prototype",
-  },
-  {
-    title: "School Robotics Dashboard",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://github.com/fikrihaikal17",
-    statusKey: "projects.status.onDevelopment",
-    statusText: "On Development",
-  },
-  {
-    title: "Internship Task Tracker",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://github.com/fikrihaikal17",
-    statusKey: "projects.status.onDevelopment",
-    statusText: "On Development",
-  },
-  {
-    title: "Smart Classroom Monitor (IoT)",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://github.com/fikrihaikal17",
-    statusKey: "projects.status.prototype",
-    statusText: "Prototype",
-  },
-  {
-    title: "Portfolio CMS Admin",
-    link: "https://github.com/fikrihaikal17",
-    preview: "https://github.com/fikrihaikal17",
-    statusKey: "projects.status.onDevelopment",
-    statusText: "On Development",
-  },
-];
+let projects: Project[] = [];
+try {
+  const dbProjects = await getAllProjects();
+  projects = dbProjects.map(p => ({
+    title: p.title,
+    link: p.link,
+    preview: p.preview,
+    statusKey: p.status_key,
+    statusText: p.status_text
+  }));
+} catch (e) {
+  console.error("Failed to load projects from DB:", e);
+}
 ---
+
 
 <section
   id="projects"
@@ -82,7 +40,7 @@ const projects: Project[] = [
       >Projects</h3
     >
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="grid grid-cols-2 gap-4 md:gap-8">
       {
         projects.map((project, index) => (
           <div
@@ -98,37 +56,39 @@ const projects: Project[] = [
             >
               <div class="rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 mb-4">
                 <div
-                  class="w-full h-48 md:h-72 relative overflow-hidden group-hover:scale-105 transition-transform duration-300 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--sec)_38%,transparent),color-mix(in_srgb,var(--component-bg)_78%,transparent))]"
+                  class="w-full h-28 sm:h-40 md:h-72 relative overflow-hidden group-hover:scale-105 transition-transform duration-300 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--sec)_38%,transparent),color-mix(in_srgb,var(--component-bg)_78%,transparent))]"
                   aria-label={`Placeholder preview for ${project.title}`}
                 >
                   <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_45%)]"></div>
-                  <div class="absolute inset-x-4 bottom-4 px-3 py-2 rounded-lg border border-[var(--white-icon-tr)] bg-[color-mix(in_srgb,var(--component-bg)_86%,transparent)] text-[var(--white-icon)] text-xs tracking-[0.08em] uppercase">
-                    Preview image pending update
+                  <div class="absolute inset-x-2 bottom-2 md:inset-x-4 md:bottom-4 px-2 py-1 md:px-3 md:py-2 rounded-lg border border-[var(--white-icon-tr)] bg-[color-mix(in_srgb,var(--component-bg)_86%,transparent)] text-[var(--white-icon)] text-[9px] md:text-xs tracking-[0.08em] uppercase text-center">
+                    <span class="hidden sm:inline" data-translate>Preview image pending update</span>
+                    <span class="inline sm:hidden" data-translate>Pending Update</span>
                   </div>
                 </div>
               </div>
-              <div class="flex items-center px-3">
+              <div class="flex flex-col sm:flex-row sm:items-center px-1 md:px-3 gap-1 md:gap-3">
                 <div class="flex-grow">
-                  <h4 class="text-2xl font-semibold">{project.title}</h4>
+                  <h4 class="text-sm sm:text-base md:text-2xl font-semibold leading-tight" data-translate>{project.title}</h4>
                   <span
-                    class="py-1 text-sm text-[var(--white-icon)]"
+                    class="block py-0.5 text-xs sm:text-sm text-[var(--white-icon)]"
                     data-i18n={project.statusKey}
+                    data-translate
                   >
                     {project.statusText}
                   </span>
                 </div>
-                <div class="flex gap-2 ml-auto">
+                <div class="flex gap-1.5 sm:gap-2 mt-1.5 sm:mt-0">
                   <a
                     target="_blank"
                     href={project.link}
                     aria-label="GitHub"
-                    class="size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-[var(--white)] transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-3 rounded-xl bg-[var(--component-bg)] hover:bg-[var(--white-icon-tr)]"
+                    class="size-8 sm:size-10 md:size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-[var(--white)] transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-1.5 sm:p-2 md:p-3 rounded-lg md:rounded-xl bg-[var(--component-bg)] hover:bg-[var(--white-icon-tr)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
                       fill="currentColor"
-                      class="size-7"
+                      class="size-4 sm:size-5 md:size-7"
                     >
                       <path d="M24 12L18.3431 17.6569L16.9289 16.2426L21.1716 12L16.9289 7.75736L18.3431 6.34315L24 12ZM2.82843 12L7.07107 16.2426L5.65685 17.6569L0 12L5.65685 6.34315L7.07107 7.75736L2.82843 12ZM9.78845 21H7.66009L14.2116 3H16.3399L9.78845 21Z" />
                     </svg>
@@ -137,13 +97,13 @@ const projects: Project[] = [
                     target="_blank"
                     href={project.preview}
                     aria-label="Preview"
-                    class="size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-[var(--white)] transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-3 rounded-xl bg-[var(--component-bg)] hover:bg-[var(--white-icon-tr)]"
+                    class="size-8 sm:size-10 md:size-14 flex justify-center items-center text-[var(--white-icon)] hover:text-[var(--white)] transition duration-300 ease-in-out border border-1 border-[var(--white-icon-tr)] p-1.5 sm:p-2 md:p-3 rounded-lg md:rounded-xl bg-[var(--component-bg)] hover:bg-[var(--white-icon-tr)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
                       fill="currentColor"
-                      class="size-7"
+                      class="size-4 sm:size-5 md:size-7"
                     >
                       <path d="M16.0037 9.41421L7.39712 18.0208L5.98291 16.6066L14.5895 8H7.00373V6H18.0037V17H16.0037V9.41421Z" />
                     </svg>

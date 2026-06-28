@@ -1,7 +1,9 @@
 ---
 import LikeButton from "../React/LikeButton.tsx";
+import { getSettingValue } from "@/lib/admin/repository";
 
 const currentYear = new Date().getFullYear();
+const ownerName = await getSettingValue("owner_name", "Muhammad Fikri Haikal");
 ---
 
 <footer
@@ -104,7 +106,7 @@ const currentYear = new Date().getFullYear();
         <!-- If you are using this template, by MIT License you can't remove the copyright notice -->
         <span class="block sm:inline"
           >Copyright © {currentYear} <a href="https://github.com/fikrihaikal17"
-            >Muhammad Fikri Haikal</a
+            >{ownerName}</a
           >. <span data-i18n="footer.rights">All rights reserved.</span></span
         >
       </p>
